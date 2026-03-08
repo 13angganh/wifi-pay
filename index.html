@@ -1298,47 +1298,41 @@ function importData(e){
   reader.onload=ev=>{
     try{
       const raw=ev.target.result;
-      // Strip BOM if present
       const cleaned=raw.charCodeAt(0)===0xFEFF?raw.slice(1):raw;
       const data=JSON.parse(cleaned);
-      // Validate structure
-      if(!data||typeof data!=='object'){showToast('Format file tidak valid!','err');return;}
-      if(!data.krsMembers&&!data.slkMembers&&!data.payments){
-        showToast('File tidak berisi data WiFi Pay!','err');return;
+      if(!data||typeof data!=='object'||(!data.krsMembers&&!data.payments)){
+        showToast('File tidak valid!','err');return;
       }
-      // Pause Firebase listener to prevent overwrite race condition
-      if(dbRef) dbRef.off();
-      // Apply data
+      // Terapkan data ke appData
       if(Array.isArray(data.krsMembers)) appData.krsMembers=data.krsMembers;
       if(Array.isArray(data.slkMembers)) appData.slkMembers=data.slkMembers;
       if(data.payments&&typeof data.payments==='object') appData.payments=data.payments;
       if(data.memberInfo&&typeof data.memberInfo==='object') appData.memberInfo=data.memberInfo;
-      if(!appData.activityLog) appData.activityLog=[];
-      // Write to Firebase directly
-      if(dbRef===null) dbRef=db.ref('users/'+uid+'/data');
+      appData.activityLog=data.activityLog||[];
+      // Simpan ke Firebase - buat ulang dbRef yang fresh
+      const ref=db.ref('users/'+uid+'/data');
       setSyncStatus('loading');
-      dbRef.set(appData)
+      showToast('Mengimpor data...');
+      ref.set(appData)
         .then(()=>{
           setSyncStatus('ok');
-          // Re-attach listener after write
+          // Pasang ulang listener pada dbRef global
+          if(dbRef) dbRef.off();
+          dbRef=ref;
           dbRef.on('value',snap=>{
             const val=snap.val();
             if(val) appData=Object.assign({krsMembers:[],slkMembers:[],payments:{},memberInfo:{},activityLog:[]},val);
             render();
           });
-          saveDB({action:'⬆️ Import data dari file JSON',detail:`${appData.krsMembers.length} KRS, ${appData.slkMembers.length} SLK`});
           render();
-          showToast('Data berhasil di-import! '+appData.krsMembers.length+' KRS, '+appData.slkMembers.length+' SLK');
+          showToast('✅ Import berhasil! '+appData.krsMembers.length+' KRS, '+appData.slkMembers.length+' SLK');
         })
         .catch(err=>{
           setSyncStatus('err');
-          showToast('Gagal simpan ke cloud: '+err.message,'err');
-          // Re-attach listener anyway
-          dbRef.on('value',snap=>{const val=snap.val();if(val)appData=Object.assign({krsMembers:[],slkMembers:[],payments:{},memberInfo:{},activityLog:[]},val);render();});
+          showToast('Gagal ke Firebase: '+err.message,'err');
         });
     }catch(err){
-      console.error('Import error:',err);
-      showToast('File tidak valid! Pastikan file .json dari WiFi Pay','err');
+      showToast('Gagal baca file: '+err.message,'err');
     }
   };
   reader.readAsText(file);
