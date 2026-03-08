@@ -415,6 +415,7 @@ const db = firebase.database();
 const MONTHS=["Jan","Feb","Mar","Apr","Mei","Jun","Jul","Agt","Sep","Okt","Nov","Des"];
 const YEARS=[2023,2024,2025,2026,2027,2028];
 const QUICK=[50,80,90,100,150,200];
+function fbKey(s){return s.replace(/[.#$\[\]/]/g,'-');}  // Sanitize Firebase key
 function enc(s){try{return btoa(unescape(encodeURIComponent(s)));}catch(e){return '';}}
 function dec(s){try{return decodeURIComponent(escape(atob(s)));}catch(e){return '';}}
 function rp(v){return 'Rp '+(v*1000).toLocaleString('id-ID');}
@@ -658,7 +659,7 @@ auth.onAuthStateChanged(user=>{
 // ══════════════════════════════════════════
 // HELPERS
 // ══════════════════════════════════════════
-function getKey(zone,name,year,month){return `${zone}__${name}__${year}__${month}`;}
+function getKey(zone,name,year,month){return `${zone}__${fbKey(name)}__${year}__${month}`;}
 function getPay(zone,name,year,month){return appData.payments?.[getKey(zone,name,year,month)]??null;}
 function members(){return activeZone==='KRS'?appData.krsMembers:appData.slkMembers;}
 function getInfo(name){return appData.memberInfo?.[activeZone+'__'+name]||{};}
