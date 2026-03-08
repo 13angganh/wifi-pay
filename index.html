@@ -192,6 +192,10 @@ img{pointer-events:none}
 .modal-action:active{opacity:.8}
 
 /* ── TOAST ── */
+#update-banner{position:fixed;top:0;left:0;right:0;z-index:9999;background:linear-gradient(90deg,#1a3a1a,#0d2b0d);border-bottom:1px solid #5bcea655;padding:10px 16px;display:none;align-items:center;justify-content:space-between;gap:10px}
+#update-banner.show{display:flex}
+.update-msg{font-size:12px;color:#5bcea6}
+.update-btn{background:#5bcea6;color:#0a0c12;border:none;padding:6px 14px;border-radius:6px;font-size:11px;font-weight:700;cursor:pointer;flex-shrink:0}
 .toast{position:fixed;bottom:76px;left:50%;transform:translateX(-50%);padding:9px 16px;border-radius:8px;font-size:11px;z-index:999;white-space:nowrap;animation:tIn .25s ease;pointer-events:none}
 .tok{background:#0d2b1f;color:#5bcea6;border:1px solid #5bcea633}
 .terr{background:#1f0d0d;color:#e05c5c;border:1px solid #e05c5c33}
@@ -210,6 +214,12 @@ img{pointer-events:none}
 <body>
 
 <!-- ══ LOGIN SCREEN ══ -->
+<!-- ══ UPDATE BANNER ══ -->
+<div id="update-banner">
+  <span class="update-msg">🆕 Ada versi terbaru WiFi Pay!</span>
+  <button class="update-btn" onclick="doUpdate()">Update Sekarang</button>
+</div>
+
 <div id="screen-login">
   <div class="login-logo">📶</div>
   <div class="login-title">WiFi Pay</div>
@@ -1463,6 +1473,48 @@ function importData(e){
 // PWA
 // ══════════════════════════════════════════
 window.addEventListener('beforeinstallprompt',e=>{e.preventDefault();deferredPrompt=e;if(currentView==='entry')render();});
+
+// ══ SERVICE WORKER + AUTO UPDATE ══
+if('serviceWorker' in navigator){
+  navigator.serviceWorker.register('/wifi-pay/sw.js').then(reg=>{
+    // Cek update setiap kali app dibuka
+    reg.update();
+    // Jika ada SW baru menunggu -> tampilkan banner
+    if(reg.waiting) showUpdateBanner();
+    reg.addEventListener('updatefound',()=>{
+      const newSW=reg.installing;
+      newSW.addEventListener('statechange',()=>{
+        if(newSW.state==='installed'&&navigator.serviceWorker.controller){
+          showUpdateBanner();
+        }
+      });
+    });
+  });
+  // Terima pesan dari SW saat activate selesai
+  navigator.serviceWorker.addEventListener('message',e=>{
+    if(e.data&&e.data.type==='SW_UPDATED') showUpdateBanner();
+  });
+  // Reload otomatis setelah SW baru aktif
+  let refreshing=false;
+  navigator.serviceWorker.addEventListener('controllerchange',()=>{
+    if(!refreshing){refreshing=true;window.location.reload();}
+  });
+}
+
+function showUpdateBanner(){
+  const b=document.getElementById('update-banner');
+  if(b) b.classList.add('show');
+}
+
+function doUpdate(){
+  navigator.serviceWorker.getRegistration().then(reg=>{
+    if(reg&&reg.waiting){
+      reg.waiting.postMessage({type:'SKIP_WAITING'});
+    } else {
+      window.location.reload(true);
+    }
+  });
+}
 function installPWA(){if(!deferredPrompt)return;deferredPrompt.prompt();deferredPrompt.userChoice.then(()=>{deferredPrompt=null;render();});}
 if('serviceWorker' in navigator) window.addEventListener('load',()=>navigator.serviceWorker.register('sw.js').catch(()=>{}));
 

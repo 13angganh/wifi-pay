@@ -1,11 +1,11 @@
-const CACHE = "wifipay-v6";
+const CACHE = "wifipay-v7";
 const ASSETS = ["/", "/index.html", "/manifest.json", "/icon-192.png", "/icon-512.png"];
 
 self.addEventListener("install", e => {
   e.waitUntil(
     caches.open(CACHE)
       .then(c => c.addAll(ASSETS))
-      .then(() => self.skipWaiting()) // Langsung aktif tanpa tunggu tab tutup
+      .then(() => self.skipWaiting())
   );
 });
 
@@ -13,12 +13,15 @@ self.addEventListener("activate", e => {
   e.waitUntil(
     caches.keys()
       .then(keys => Promise.all(
-        keys.filter(k => k !== CACHE).map(k => {
-          console.log("Deleting old cache:", k);
-          return caches.delete(k);
-        })
+        keys.filter(k => k !== CACHE).map(k => caches.delete(k))
       ))
-      .then(() => self.clients.claim()) // Ambil alih semua tab sekarang juga
+      .then(() => self.clients.claim())
+      .then(() => {
+        // Beritahu semua tab yang terbuka bahwa ada update
+        self.clients.matchAll().then(clients => {
+          clients.forEach(client => client.postMessage({type: "SW_UPDATED"}));
+        });
+      })
   );
 });
 
@@ -27,7 +30,7 @@ self.addEventListener("fetch", e => {
     e.respondWith(fetch(e.request).catch(() => caches.match(e.request)));
     return;
   }
-  // Network first - selalu coba ambil versi terbaru dari network
+  // Network first - selalu ambil versi terbaru
   e.respondWith(
     fetch(e.request)
       .then(res => {
@@ -38,4 +41,9 @@ self.addEventListener("fetch", e => {
       })
       .catch(() => caches.match(e.request).then(r => r || caches.match("/index.html")))
   );
+});
+
+// Terima perintah skip waiting dari app
+self.addEventListener("message", e => {
+  if (e.data && e.data.type === "SKIP_WAITING") self.skipWaiting();
 });
