@@ -615,11 +615,24 @@ function initDB(){
   dbRef=db.ref('users/'+uid+'/data');
   dbRef.on('value',snap=>{
     const val=snap.val();
-    if(val){
-      appData=Object.assign({krsMembers:[...DEFAULT_KRS],slkMembers:[...DEFAULT_SLK],payments:{},memberInfo:{},activityLog:[]},val);
-      if(!appData.activityLog) appData.activityLog=[];
-      if(!appData.memberInfo) appData.memberInfo={};
+    if(val&&(val.krsMembers||val.payments)){
+      // Ada data di Firebase - pakai langsung
+      appData={
+        krsMembers: val.krsMembers||[],
+        slkMembers: val.slkMembers||[],
+        payments: val.payments||{},
+        memberInfo: val.memberInfo||{},
+        activityLog: val.activityLog||[]
+      };
+    } else if(!val){
+      // Firebase kosong - pakai DEFAULT
+      appData={
+        krsMembers:[...DEFAULT_KRS],
+        slkMembers:[...DEFAULT_SLK],
+        payments:{},memberInfo:{},activityLog:[]
+      };
     }
+    // Jika val ada tapi krsMembers belum (masih proses upload) - jangan overwrite
     setSyncStatus('ok');
     render();
   },err=>{setSyncStatus('err');});
@@ -661,7 +674,7 @@ auth.onAuthStateChanged(user=>{
 // ══════════════════════════════════════════
 function getKey(zone,name,year,month){return `${zone}__${fbKey(name)}__${year}__${month}`;}
 function getPay(zone,name,year,month){return appData.payments?.[getKey(zone,name,year,month)]??null;}
-function members(){return activeZone==='KRS'?appData.krsMembers:appData.slkMembers;}
+function members(){if(activeZone==='TOTAL')return [...appData.krsMembers,...appData.slkMembers];return activeZone==='KRS'?appData.krsMembers:appData.slkMembers;}
 function getInfo(name){return appData.memberInfo?.[activeZone+'__'+name]||{};}
 
 function setZoneColor(z){
@@ -884,11 +897,64 @@ function renderTunggakan(){
 // ══════════════════════════════════════════
 // GRAFIK VIEW
 // ══════════════════════════════════════════
+function grafikMembers(){
+  if(activeZone==='TOTAL') return [...appData.krsMembers,...appData.slkMembers];
+  return activeZone==='KRS'?appData.krsMembers:appData.slkMembers;
+}
+function grafikPay(name,year,mi){
+  if(activeZone==='TOTAL'){
+    return (appData.payments?.[getKey('KRS',name,year,mi)]||0)+(appData.payments?.[getKey('SLK',name,year,mi)]||0);
+  }
+  return appData.payments?.[getKey(activeZone,name,year,mi)]||0;
+}
+function getZoneTotal(zone,year,mi){
+  const mems=zone==='KRS'?appData.krsMembers:appData.slkMembers;
+  return mems.reduce((s,m)=>s+(appData.payments?.[getKey(zone,m,year,mi)]||0),0);
+}
+
 function renderGrafik(){
   const yrOpts=YEARS.map(y=>`<option value="${y}"${y===selYear?' selected':''}>${y}</option>`).join('');
-  return `<div class="ctrl-row">
+  const zc=activeZone==='KRS'?'#3a7bd5':activeZone==='SLK'?'#e05c3a':'#5bcea6';
+
+  // Hitung stats bulanan (selYear)
+  const mData=MONTHS.map((_,mi)=>{
+    if(activeZone==='TOTAL') return getZoneTotal('KRS',selYear,mi)+getZoneTotal('SLK',selYear,mi);
+    return grafikMembers().reduce((s,m)=>s+(appData.payments?.[getKey(activeZone,m,selYear,mi)]||0),0);
+  });
+  const mNonZero=mData.filter(v=>v>0);
+  const mAvg=mNonZero.length?Math.round(mNonZero.reduce((a,b)=>a+b,0)/mNonZero.length):0;
+  const mTotal=mData.reduce((a,b)=>a+b,0);
+
+  // Hitung stats tahunan
+  const yData=YEARS.map(y=>{
+    if(activeZone==='TOTAL') return MONTHS.reduce((s,_,mi)=>s+getZoneTotal('KRS',y,mi)+getZoneTotal('SLK',y,mi),0);
+    return MONTHS.reduce((s,_,mi)=>s+grafikMembers().reduce((ss,m)=>ss+(appData.payments?.[getKey(activeZone,m,y,mi)]||0),0),0);
+  });
+  const yNonZero=yData.filter(v=>v>0);
+  const yAvg=yNonZero.length?Math.round(yNonZero.reduce((a,b)=>a+b,0)/yNonZero.length):0;
+
+  return `<div class="ctrl-row" style="justify-content:space-between;align-items:center">
     <select class="cs" onchange="selYear=+this.value;render()">${yrOpts}</select>
+    <div style="display:flex;gap:3px;background:#131620;padding:3px;border-radius:20px;border:1px solid #1e2231">
+      <button onclick="switchZone('KRS')" style="padding:5px 14px;border-radius:16px;border:none;cursor:pointer;font-size:11px;font-weight:600;background:${activeZone==='KRS'?'#3a7bd5':'transparent'};color:${activeZone==='KRS'?'#fff':'#555'}">KRS</button>
+      <button onclick="switchZone('SLK')" style="padding:5px 14px;border-radius:16px;border:none;cursor:pointer;font-size:11px;font-weight:600;background:${activeZone==='SLK'?'#e05c3a':'transparent'};color:${activeZone==='SLK'?'#fff':'#555'}">SLK</button>
+      <button onclick="switchZone('TOTAL')" style="padding:5px 14px;border-radius:16px;border:none;cursor:pointer;font-size:11px;font-weight:600;background:${activeZone==='TOTAL'?'#5bcea6':'transparent'};color:${activeZone==='TOTAL'?'#0a0c12':'#555'}">TOTAL</button>
+    </div>
   </div>
+
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px">
+    <div style="background:#131620;border:1px solid #1e2231;border-radius:10px;padding:12px">
+      <div style="font-size:9px;color:#555;letter-spacing:.06em;margin-bottom:4px">TOTAL BULANAN ${selYear}</div>
+      <div style="font-size:15px;font-weight:700;color:${zc}">${rp(mTotal)}</div>
+      <div style="font-size:10px;color:#444;margin-top:3px">Avg/bulan: ${rp(mAvg)}</div>
+    </div>
+    <div style="background:#131620;border:1px solid #1e2231;border-radius:10px;padding:12px">
+      <div style="font-size:9px;color:#555;letter-spacing:.06em;margin-bottom:4px">RATA-RATA TAHUNAN</div>
+      <div style="font-size:15px;font-weight:700;color:${zc}">${rp(yAvg)}</div>
+      <div style="font-size:10px;color:#444;margin-top:3px">Avg/tahun dari ${yNonZero.length} thn</div>
+    </div>
+  </div>
+
   <div class="chart-box">
     <div class="chart-title">PENDAPATAN BULANAN ${selYear} · ${activeZone}</div>
     <div class="chart-wrap"><canvas id="chart-monthly"></canvas></div>
@@ -904,24 +970,35 @@ function renderGrafik(){
 }
 
 function initCharts(){
-  const zc=activeZone==='KRS'?'#3a7bd5':'#e05c3a';
+  const zc=activeZone==='KRS'?'#3a7bd5':activeZone==='SLK'?'#e05c3a':'#5bcea6';
   const cfg={responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:{callbacks:{label:ctx=>`Rp ${(ctx.raw*1000).toLocaleString('id-ID')}`}}},scales:{x:{grid:{color:'#1e2231'},ticks:{color:'#555',font:{family:'DM Mono',size:10}}},y:{grid:{color:'#1e2231'},ticks:{color:'#555',font:{family:'DM Mono',size:10},callback:v=>'Rp '+(v*1000).toLocaleString('id-ID')}}}};
 
   // Monthly
-  const mData=MONTHS.map((_,mi)=>members().reduce((s,m)=>s+(getPay(activeZone,m,selYear,mi)||0),0));
+  const mData=MONTHS.map((_,mi)=>{
+    if(activeZone==='TOTAL') return getZoneTotal('KRS',selYear,mi)+getZoneTotal('SLK',selYear,mi);
+    return members().reduce((s,m)=>s+(getPay(activeZone,m,selYear,mi)||0),0);
+  });
   const cm=document.getElementById('chart-monthly');
   if(cm){chartInstances.monthly=new Chart(cm,{type:'bar',data:{labels:MONTHS,datasets:[{data:mData,backgroundColor:zc+'99',borderColor:zc,borderWidth:2,borderRadius:4}]},options:{...cfg}});}
 
   // Yearly
-  const yData=YEARS.map(y=>MONTHS.reduce((s,_,mi)=>s+members().reduce((ss,m)=>ss+(getPay(activeZone,m,y,mi)||0),0),0));
+  const yData=YEARS.map(y=>{
+    if(activeZone==='TOTAL') return MONTHS.reduce((s,_,mi)=>s+getZoneTotal('KRS',y,mi)+getZoneTotal('SLK',y,mi),0);
+    return MONTHS.reduce((s,_,mi)=>s+members().reduce((ss,m)=>ss+(getPay(activeZone,m,y,mi)||0),0),0);
+  });
   const cy=document.getElementById('chart-yearly');
   if(cy){chartInstances.yearly=new Chart(cy,{type:'line',data:{labels:YEARS.map(String),datasets:[{data:yData,borderColor:zc,backgroundColor:zc+'22',borderWidth:2,tension:0.4,fill:true,pointBackgroundColor:zc,pointRadius:4}]},options:{...cfg}});}
 
-  // Compare KRS vs SLK
-  const kData=MONTHS.map((_,mi)=>appData.krsMembers.reduce((s,m)=>s+(appData.payments?.[getKey('KRS',m,selYear,mi)]||0),0));
-  const sData=MONTHS.map((_,mi)=>appData.slkMembers.reduce((s,m)=>s+(appData.payments?.[getKey('SLK',m,selYear,mi)]||0),0));
+  // Compare KRS vs SLK vs TOTAL
+  const kData=MONTHS.map((_,mi)=>getZoneTotal('KRS',selYear,mi));
+  const sData=MONTHS.map((_,mi)=>getZoneTotal('SLK',selYear,mi));
+  const tData=MONTHS.map((_,mi)=>kData[mi]+sData[mi]);
   const cc=document.getElementById('chart-compare');
-  if(cc){chartInstances.compare=new Chart(cc,{type:'line',data:{labels:MONTHS,datasets:[{label:'KRS',data:kData,borderColor:'#3a7bd5',backgroundColor:'#3a7bd522',borderWidth:2,tension:0.4,fill:false,pointBackgroundColor:'#3a7bd5',pointRadius:3},{label:'SLK',data:sData,borderColor:'#e05c3a',backgroundColor:'#e05c3a22',borderWidth:2,tension:0.4,fill:false,pointBackgroundColor:'#e05c3a',pointRadius:3}]},options:{...cfg,plugins:{legend:{display:true,labels:{color:'#888',font:{family:'DM Mono',size:10},boxWidth:12}},tooltip:{callbacks:{label:ctx=>`Rp ${(ctx.raw*1000).toLocaleString('id-ID')}`}}}}});}
+  if(cc){chartInstances.compare=new Chart(cc,{type:'line',data:{labels:MONTHS,datasets:[
+    {label:'KRS',data:kData,borderColor:'#3a7bd5',backgroundColor:'#3a7bd522',borderWidth:2,tension:0.4,fill:false,pointBackgroundColor:'#3a7bd5',pointRadius:3},
+    {label:'SLK',data:sData,borderColor:'#e05c3a',backgroundColor:'#e05c3a22',borderWidth:2,tension:0.4,fill:false,pointBackgroundColor:'#e05c3a',pointRadius:3},
+    {label:'TOTAL',data:tData,borderColor:'#5bcea6',backgroundColor:'#5bcea622',borderWidth:2,tension:0.4,fill:false,pointBackgroundColor:'#5bcea6',pointRadius:3,borderDash:[4,3]}
+  ]},options:{...cfg,plugins:{legend:{display:true,labels:{color:'#888',font:{family:'DM Mono',size:10},boxWidth:12}},tooltip:{callbacks:{label:ctx=>`${ctx.dataset.label}: Rp ${(ctx.raw*1000).toLocaleString('id-ID')}`}}}}});}
 }
 
 // ══════════════════════════════════════════
@@ -1304,64 +1381,76 @@ function importData(e){
       if(!data||typeof data!=='object'||(!data.krsMembers&&!data.payments)){
         showToast('File tidak valid!','err');return;
       }
-      // MATIKAN listener dulu agar tidak overwrite data import
+      // Matikan listener Firebase sementara
       if(dbRef){dbRef.off();dbRef=null;}
-      // Terapkan ke appData
-      if(Array.isArray(data.krsMembers)) appData.krsMembers=data.krsMembers;
-      if(Array.isArray(data.slkMembers)) appData.slkMembers=data.slkMembers;
-      if(data.payments&&typeof data.payments==='object') appData.payments=data.payments;
-      if(data.memberInfo&&typeof data.memberInfo==='object') appData.memberInfo=data.memberInfo;
-      appData.activityLog=data.activityLog||[];
-      // Render sekarang - data langsung tampil
-      render();
-      showToast('✅ Import berhasil! '+appData.krsMembers.length+' KRS, '+appData.slkMembers.length+' SLK');
-      setSyncStatus('loading');
-      // Upload ke Firebase
-      const ref=db.ref('users/'+uid+'/data');
-      const updates={
-        krsMembers: appData.krsMembers,
-        slkMembers: appData.slkMembers,
-        memberInfo: appData.memberInfo||{},
-        activityLog: []
+      // Set appData langsung dari file
+      appData={
+        krsMembers: Array.isArray(data.krsMembers)?data.krsMembers:[],
+        slkMembers: Array.isArray(data.slkMembers)?data.slkMembers:[],
+        payments: (data.payments&&typeof data.payments==='object')?data.payments:{},
+        memberInfo: (data.memberInfo&&typeof data.memberInfo==='object')?data.memberInfo:{},
+        activityLog:[]
       };
-      // Upload members dulu
-      ref.update(updates)
-        .then(()=>{
-          // Upload payments via update (tidak replace seluruh node)
-          const payUpdates={};
-          Object.entries(appData.payments).forEach(([k,v])=>{
-            payUpdates['payments/'+k]=v;
-          });
-          return ref.update(payUpdates);
-        })
-        .then(()=>{
-          setSyncStatus('ok');
-          showToast('☁️ Sync cloud selesai!');
-          // Pasang listener lagi - data di Firebase sudah benar
-          dbRef=ref;
-          dbRef.on('value',snap=>{
-            const val=snap.val();
-            if(val) appData=Object.assign(
-              {krsMembers:[],slkMembers:[],payments:{},memberInfo:{},activityLog:[]},
-              val
-            );
-            render();
-          },{onlyOnce:false});
-        })
-        .catch(err=>{
-          setSyncStatus('err');
-          showToast('Sync gagal: '+err.message,'err');
-          // Pasang listener lagi meski gagal
-          dbRef=ref;
-          dbRef.on('value',snap=>{
-            const val=snap.val();
-            if(val) appData=Object.assign(
-              {krsMembers:[],slkMembers:[],payments:{},memberInfo:{},activityLog:[]},
-              val
-            );
-            render();
-          });
+      // Render langsung - data sudah tampil
+      render();
+      const krsLen=appData.krsMembers.length;
+      const slkLen=appData.slkMembers.length;
+      const payLen=Object.keys(appData.payments).length;
+      showToast('✅ Import OK! '+krsLen+' KRS, '+slkLen+' SLK, '+payLen+' data');
+      // Sync ke Firebase: upload member dulu (kecil), baru payments dipecah per zona+tahun
+      setSyncStatus('loading');
+      const ref=db.ref('users/'+uid+'/data');
+      ref.child('krsMembers').set(appData.krsMembers)
+      .then(()=>ref.child('slkMembers').set(appData.slkMembers))
+      .then(()=>ref.child('memberInfo').set(appData.memberInfo||{}))
+      .then(()=>ref.child('activityLog').set([]))
+      .then(()=>{
+        // Upload payments dipecah per 200 entries agar tidak timeout
+        const entries=Object.entries(appData.payments);
+        const chunkSize=200;
+        let chain=Promise.resolve();
+        for(let i=0;i<entries.length;i+=chunkSize){
+          const chunk=entries.slice(i,i+chunkSize);
+          const obj={};
+          chunk.forEach(([k,v])=>{obj[k]=v;});
+          chain=chain.then(()=>ref.child('payments').update(obj));
+        }
+        return chain;
+      })
+      .then(()=>{
+        setSyncStatus('ok');
+        showToast('☁️ Cloud sync selesai!');
+        // Pasang listener kembali
+        dbRef=ref;
+        dbRef.on('value',snap=>{
+          const val=snap.val();
+          if(val) appData={
+            krsMembers:val.krsMembers||[],
+            slkMembers:val.slkMembers||[],
+            payments:val.payments||{},
+            memberInfo:val.memberInfo||{},
+            activityLog:val.activityLog||[]
+          };
+          render();
         });
+      })
+      .catch(err=>{
+        setSyncStatus('err');
+        showToast('Sync gagal: '+err.message,'err');
+        // Pasang listener tetap
+        dbRef=ref;
+        dbRef.on('value',snap=>{
+          const val=snap.val();
+          if(val) appData={
+            krsMembers:val.krsMembers||[],
+            slkMembers:val.slkMembers||[],
+            payments:val.payments||{},
+            memberInfo:val.memberInfo||{},
+            activityLog:val.activityLog||[]
+          };
+          render();
+        });
+      });
     }catch(err){
       showToast('Gagal baca file: '+err.message,'err');
     }
