@@ -137,10 +137,10 @@ img{pointer-events:none}
 .sbtn.ghost{background:#131620;border:1px solid #1e2231;color:#888}
 
 /* ── REKAP TABLE ── */
-.rekap-wrap{overflow-x:auto;-webkit-overflow-scrolling:touch;border-radius:10px;border:1px solid #181b24}
+.rekap-wrap{overflow-x:auto;overflow-y:auto;-webkit-overflow-scrolling:touch;border-radius:10px;border:1px solid #181b24;max-height:calc(100vh - 260px)}
 .rtable{border-collapse:collapse;font-size:11px;width:100%}
 .rtable th{padding:8px 7px;font-size:9px;color:#444;font-weight:500;letter-spacing:.06em;white-space:nowrap;background:#0e1018;position:sticky;top:0;z-index:3}
-.rtable th.stk{position:sticky;z-index:4!important}
+.rtable th.stk{position:sticky;z-index:5!important;background:#0e1018}
 .rtable td{padding:6px 7px;border-bottom:1px solid #0a0c12;white-space:nowrap;text-align:center;cursor:pointer}
 .rtable td.stk{position:sticky;background:#0e1018;z-index:2;text-align:left}
 .rtable tr:hover td{background:#111318}
@@ -368,6 +368,28 @@ img{pointer-events:none}
   </div>
 </div>
 
+<!-- ══ EDIT MEMBER MODAL ══ -->
+<div class="modal-bg" id="edit-member-modal" style="display:none" onclick="if(event.target===this)closeModal('edit-member-modal')">
+  <div class="modal center">
+    <div class="modal-title">✏️ Edit Member<button class="modal-close" onclick="closeModal('edit-member-modal')">✕</button></div>
+    <div class="modal-row">
+      <div class="modal-label">NAMA</div>
+      <input class="modal-select" id="em-name" style="border-radius:7px;padding:9px 12px;background:#131620;border:1px solid #1e2231;color:#ddd8cc;font-size:13px"/>
+    </div>
+    <div class="modal-row">
+      <div class="modal-label">ID PELANGGAN</div>
+      <input class="modal-select" id="em-id" style="border-radius:7px;padding:9px 12px;background:#131620;border:1px solid #1e2231;color:#ddd8cc;font-size:13px" placeholder="Opsional"/>
+    </div>
+    <div class="modal-row">
+      <div class="modal-label">IP / LINK ROUTER</div>
+      <input class="modal-select" id="em-ip" style="border-radius:7px;padding:9px 12px;background:#131620;border:1px solid #1e2231;color:#ddd8cc;font-size:13px" placeholder="192.168.x.x atau http://..."/>
+    </div>
+    <input type="hidden" id="em-original-name"/>
+    <input type="hidden" id="em-zone"/>
+    <button class="modal-action" onclick="saveEditMember()">Simpan Perubahan</button>
+  </div>
+</div>
+
 <script>
 // ══════════════════════════════════════════
 // FIREBASE CONFIG
@@ -390,6 +412,8 @@ const db = firebase.database();
 const MONTHS=["Jan","Feb","Mar","Apr","Mei","Jun","Jul","Agt","Sep","Okt","Nov","Des"];
 const YEARS=[2023,2024,2025,2026,2027,2028];
 const QUICK=[50,80,90,100,150,200];
+function rp(v){return 'Rp '+(v*1000).toLocaleString('id-ID');}
+function rpShort(v){return v!==null&&v!==undefined?(v*1000).toLocaleString('id-ID'):'—';}
 const DEFAULT_KRS=["ABIL","ADIT","AJI","AKBAR","ALFIN","ANA","ARPAN","AYU NANDA","B.IKE","B.NINGSIH","B.WULAN","BAGAS","BERI","CECEK","DAYAT","DIKA JON","DISTY","ELLA","ESRA","FARHAN","FEBI","FERA","FIRLI","GILANG","GO","HABIBAH","HABIL","HALIK","HAMIM","ICAN","IING","IMAMAH","INTAN GN","LENI","LILIS","MAHRUS","MAY","MUHAMMAD","NATUL","NIA","NININ","NONIK","P.BUDI","PUPUT","QORI","RAGIL","RANI","RIA","RIFA","RILA","RIRIB","RYAN","SDN","SIFA","SURYA","UCI","VINA","VIO","WARSA","WAWAN","WILDA","WILDAN","YENI","ZEN"];
 const DEFAULT_SLK=["AFAN","AIDI","AMIN","ANAS","ANGGUN","ANIS","BAY","CLARA","DAIFI","DHEA","DIKRI","ELIYA","ERFAN","FAHMI","FAIL","FATIA","FIROCH","GUNAWAN","H.MUALIS","HAIKAL","HENDRA","IKROM","INUL","IPUL","IRHAM","LUKMAN","MAHRUS","MAKSUM","MAY","MELLY","NAFIS","NAUFAL","NIA SALAK","NISA","NURIL","OPEK","P.IIL","RIFKI","RINA","ROBI","ROSI","SAMSUDI","SATAM","SHELA","SHOFIA","SOFI","SUKI","SUTIK","UUS","VIVI","WAHYU","WARDA","ZAHDAN"];
 
@@ -406,6 +430,7 @@ let shareType="monthly", shareFmt="pdf", expFmt="json";
 let dbRef=null, deferredPrompt=null;
 let chartInstances={};
 let pendingEdits={};
+let membersLocked=false;
 
 // ══════════════════════════════════════════
 // AUTH
@@ -680,7 +705,7 @@ function renderEntry(){
     ${[['all','Semua'],['paid','Lunas'],['unpaid','Belum']].map(([v,l])=>`<button class="fchip${filterStatus===v?' on':''}" onclick="filterStatus='${v}';render()">${l}</button>`).join('')}
   </div>
   <div class="sum-bar">
-    <div><div class="sum-lbl">${MONTHS[selMonth]} ${selYear} · ${activeZone}</div><div class="sum-val">Rp ${total.toLocaleString('id-ID')}</div></div>
+    <div><div class="sum-lbl">${MONTHS[selMonth]} ${selYear} · ${activeZone}</div><div class="sum-val">${rp(total)}</div></div>
     <div style="text-align:right;font-size:11px;color:#555;line-height:2">
       <span style="color:#5bcea6">✓ ${paid}</span>&nbsp;<span style="color:#e05c5c">✕ ${unpaid}</span>
     </div>
@@ -699,7 +724,7 @@ function renderRekap(){
     let rt=0;
     const cells=MONTHS.map((_,mi)=>{
       const v=getPay(activeZone,name,selYear,mi);rt+=v||0;
-      return `<td class="${v>0?'cv':v===0?'cz':'cn'}" onclick="goEntry('${name}',${mi})">${v!==null?v:'—'}</td>`;
+      return `<td class="${v>0?'cv':v===0?'cz':'cn'}" onclick="goEntry('${name}',${mi})">${v!==null?(v*1000).toLocaleString('id-ID'):'—'}</td>`;
     }).join('');
     return `<tr><td class="stk" style="left:0;font-size:10px;color:#333;padding-left:8px;min-width:22px">${i+1}</td>
     <td class="stk" style="left:22px;min-width:95px;font-size:12px;text-align:left;padding-left:6px">${name}</td>
@@ -707,7 +732,7 @@ function renderRekap(){
   }).join('');
   const ftCells=MONTHS.map((_,mi)=>{
     const t=members().reduce((s,m)=>s+(getPay(activeZone,m,selYear,mi)||0),0);
-    return `<td style="color:#5bcea6;font-weight:700">${t.toLocaleString('id-ID')}</td>`;
+    return `<td style="color:#5bcea6;font-weight:700">${(t*1000).toLocaleString('id-ID')}</td>`;
   }).join('');
   return `<div style="display:flex;gap:7px;margin-bottom:10px;align-items:center">
     <select class="cs" style="flex:none;width:auto" onchange="selYear=+this.value;render()">${yrOpts}</select>
@@ -715,7 +740,7 @@ function renderRekap(){
   </div>
   <div class="sum-bar" style="margin-bottom:10px">
     <div class="sum-lbl">${activeZone} ${selYear}</div>
-    <div class="sum-val">Rp ${grand.toLocaleString('id-ID')}</div>
+    <div class="sum-val">${rp(grand)}</div>
   </div>
   <div class="rekap-wrap">
   <table class="rtable">
@@ -806,7 +831,7 @@ function renderGrafik(){
 
 function initCharts(){
   const zc=activeZone==='KRS'?'#3a7bd5':'#e05c3a';
-  const cfg={responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:{callbacks:{label:ctx=>`Rp ${ctx.raw.toLocaleString('id-ID')}`}}},scales:{x:{grid:{color:'#1e2231'},ticks:{color:'#555',font:{family:'DM Mono',size:10}}},y:{grid:{color:'#1e2231'},ticks:{color:'#555',font:{family:'DM Mono',size:10},callback:v=>'Rp '+v.toLocaleString('id-ID')}}}};
+  const cfg={responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:{callbacks:{label:ctx=>`Rp ${(ctx.raw*1000).toLocaleString('id-ID')}`}}},scales:{x:{grid:{color:'#1e2231'},ticks:{color:'#555',font:{family:'DM Mono',size:10}}},y:{grid:{color:'#1e2231'},ticks:{color:'#555',font:{family:'DM Mono',size:10},callback:v=>'Rp '+(v*1000).toLocaleString('id-ID')}}}};
 
   // Monthly
   const mData=MONTHS.map((_,mi)=>members().reduce((s,m)=>s+(getPay(activeZone,m,selYear,mi)||0),0));
@@ -822,7 +847,7 @@ function initCharts(){
   const kData=MONTHS.map((_,mi)=>appData.krsMembers.reduce((s,m)=>s+(appData.payments?.[getKey('KRS',m,selYear,mi)]||0),0));
   const sData=MONTHS.map((_,mi)=>appData.slkMembers.reduce((s,m)=>s+(appData.payments?.[getKey('SLK',m,selYear,mi)]||0),0));
   const cc=document.getElementById('chart-compare');
-  if(cc){chartInstances.compare=new Chart(cc,{type:'line',data:{labels:MONTHS,datasets:[{label:'KRS',data:kData,borderColor:'#3a7bd5',backgroundColor:'#3a7bd522',borderWidth:2,tension:0.4,fill:false,pointBackgroundColor:'#3a7bd5',pointRadius:3},{label:'SLK',data:sData,borderColor:'#e05c3a',backgroundColor:'#e05c3a22',borderWidth:2,tension:0.4,fill:false,pointBackgroundColor:'#e05c3a',pointRadius:3}]},options:{...cfg,plugins:{...cfg.plugins,legend:{display:true,labels:{color:'#888',font:{family:'DM Mono',size:10},boxWidth:12}}}}});}
+  if(cc){chartInstances.compare=new Chart(cc,{type:'line',data:{labels:MONTHS,datasets:[{label:'KRS',data:kData,borderColor:'#3a7bd5',backgroundColor:'#3a7bd522',borderWidth:2,tension:0.4,fill:false,pointBackgroundColor:'#3a7bd5',pointRadius:3},{label:'SLK',data:sData,borderColor:'#e05c3a',backgroundColor:'#e05c3a22',borderWidth:2,tension:0.4,fill:false,pointBackgroundColor:'#e05c3a',pointRadius:3}]},options:{...cfg,plugins:{legend:{display:true,labels:{color:'#888',font:{family:'DM Mono',size:10},boxWidth:12}},tooltip:{callbacks:{label:ctx=>`Rp ${(ctx.raw*1000).toLocaleString('id-ID')}`}}}}});}
 }
 
 // ══════════════════════════════════════════
@@ -852,12 +877,15 @@ function renderMembers(){
     const filtered=mems.filter(m=>m.toLowerCase().includes(search.toLowerCase()));
     const rows=filtered.map((name,i)=>{
       const info=appData.memberInfo?.[zone+'__'+name]||{};
+      const idBadge=info.id?`<span class="mem-id-badge">${info.id}</span>`:'<span class="mem-id-badge" style="color:#333;border-color:#1e2231">—</span>';
+      const editBtn=!membersLocked?`<button onclick="openEditMember('${zone}','${name}')" style="background:none;border:1px solid #1e3a5f;color:#3a7bd5;padding:4px 8px;border-radius:5px;cursor:pointer;font-size:10px;flex-shrink:0">✏️</button>`:'';
+      const delBtn=!membersLocked?`<button class="delbtn" onclick="deleteMember('${zone}','${name}')">✕</button>`:'';
       return `<div class="mem-row">
         <span class="mem-num">${i+1}.</span>
-        ${info.id?`<span class="mem-id-badge">${info.id}</span>`:'<span class="mem-id-badge" style="color:#333;border-color:#1e2231">—</span>'}
+        ${idBadge}
         <span class="mem-name-txt">${name}</span>
         ${info.ip?`<span class="mem-ip-txt">${info.ip}</span>`:''}
-        <button class="delbtn" onclick="deleteMember('${zone}','${name}')">✕</button>
+        ${editBtn}${delBtn}
       </div>`;
     }).join('');
     return `<div class="mem-section">
@@ -866,7 +894,11 @@ function renderMembers(){
         <span style="font-size:10px;color:#444">${filtered.length} member</span>
       </div>${rows}</div>`;
   };
-  return `<div class="add-form">
+  const lockBtn=`<div style="display:flex;justify-content:flex-end;margin-bottom:12px">
+    <button onclick="toggleMembersLock()" style="background:${membersLocked?'#0d2b1f':'#1f0d0d'};border:1px solid ${membersLocked?'#5bcea633':'#e05c5c33'};color:${membersLocked?'#5bcea6':'#e05c5c'};padding:7px 16px;border-radius:7px;cursor:pointer;font-size:11px">
+      ${membersLocked?'🔒 Terkunci — Tap untuk Unlock':'🔓 Tidak Terkunci — Tap untuk Lock'}
+    </button></div>`;
+  const addForm=membersLocked?'':`<div class="add-form">
     <div class="af-title">TAMBAH MEMBER BARU</div>
     <div class="af-grid">
       <div><div style="font-size:10px;color:#555;margin-bottom:4px">NAMA</div>
@@ -883,8 +915,8 @@ function renderMembers(){
       </div>
     </div>
     <button style="width:100%;background:var(--zc);color:#fff;border:none;padding:10px;border-radius:8px;font-size:13px;font-weight:600;cursor:pointer" onclick="addMember()">+ Tambah Member</button>
-  </div>
-  <input class="search-box" placeholder="🔍 Cari nama..." value="${search}" oninput="search=this.value;render()"/>
+  </div>`;
+  return lockBtn+addForm+`<input class="search-box" placeholder="🔍 Cari nama..." value="${search}" oninput="search=this.value;render()"/>
   ${renderList('KRS',appData.krsMembers)}
   ${renderList('SLK',appData.slkMembers)}`;
 }
@@ -903,7 +935,7 @@ function attachEvents(){
       if(val===''||val===null) delete appData.payments[k];
       else appData.payments[k]=Number(val);
       saveDB({action:`💰 Bayar ${activeZone} - ${name}`,detail:`${MONTHS[selMonth]} ${selYear}: ${old??'—'} → Rp ${Number(val).toLocaleString('id-ID')}`});
-      showToast(`${name} → Rp ${Number(val).toLocaleString('id-ID')}`);
+      showToast(`${name} → ${rp(Number(val))}`);
       expandedCard=name; render();
     });
   });
@@ -939,7 +971,7 @@ function quickPay(name,amt){
   const old=getPay(activeZone,name,selYear,selMonth);
   appData.payments[getKey(activeZone,name,selYear,selMonth)]=amt;
   saveDB({action:`💰 Quick Pay ${activeZone} - ${name}`,detail:`${MONTHS[selMonth]} ${selYear}: ${old??'—'} → Rp ${amt.toLocaleString('id-ID')}`});
-  showToast(`${name} → Rp ${amt.toLocaleString('id-ID')}`);
+  showToast(`${name} → ${rp(amt)}`);
   expandedCard=null; render();
 }
 
@@ -971,11 +1003,69 @@ function addMember(){
 }
 
 function deleteMember(zone,name){
+  if(membersLocked){showToast('Data terkunci! Unlock dulu','err');return;}
   if(!confirm(`Hapus ${name} dari ${zone}?`))return;
   if(zone==='KRS') appData.krsMembers=appData.krsMembers.filter(m=>m!==name);
   else appData.slkMembers=appData.slkMembers.filter(m=>m!==name);
   saveDB({action:`🗑️ Hapus member ${zone} - ${name}`});
   showToast(`${name} dihapus`,'err');
+  render();
+}
+
+function toggleMembersLock(){
+  membersLocked=!membersLocked;
+  showToast(membersLocked?'🔒 Data member terkunci':'🔓 Data member tidak terkunci', membersLocked?'ok':'err');
+  render();
+}
+
+function openEditMember(zone,name){
+  if(membersLocked){showToast('Data terkunci! Unlock dulu','err');return;}
+  const info=appData.memberInfo?.[zone+'__'+name]||{};
+  document.getElementById('em-name').value=name;
+  document.getElementById('em-id').value=info.id||'';
+  document.getElementById('em-ip').value=info.ip||'';
+  document.getElementById('em-original-name').value=name;
+  document.getElementById('em-zone').value=zone;
+  document.getElementById('edit-member-modal').style.display='flex';
+}
+
+function saveEditMember(){
+  const zone=document.getElementById('em-zone').value;
+  const originalName=document.getElementById('em-original-name').value;
+  const newName=document.getElementById('em-name').value.trim().toUpperCase();
+  const newId=document.getElementById('em-id').value.trim();
+  const newIp=document.getElementById('em-ip').value.trim();
+  if(!newName){showToast('Nama tidak boleh kosong','err');return;}
+  const list=zone==='KRS'?appData.krsMembers:appData.slkMembers;
+  const idx=list.indexOf(originalName);
+  if(idx===-1){showToast('Member tidak ditemukan','err');return;}
+  // Rename in list
+  if(newName!==originalName){
+    if(list.includes(newName)){showToast('Nama sudah ada!','err');return;}
+    list[idx]=newName;
+    list.sort();
+    // Migrate payments
+    if(!appData.payments) appData.payments={};
+    const oldKeys=Object.keys(appData.payments).filter(k=>k.startsWith(zone+'__'+originalName+'__'));
+    oldKeys.forEach(k=>{
+      const newKey=k.replace(zone+'__'+originalName+'__',zone+'__'+newName+'__');
+      appData.payments[newKey]=appData.payments[k];
+      delete appData.payments[k];
+    });
+    // Migrate memberInfo
+    if(appData.memberInfo){
+      const oldInfoKey=zone+'__'+originalName;
+      const info=appData.memberInfo[oldInfoKey]||{};
+      delete appData.memberInfo[oldInfoKey];
+      appData.memberInfo[zone+'__'+newName]={...info,id:newId,ip:newIp};
+    }
+  } else {
+    if(!appData.memberInfo) appData.memberInfo={};
+    appData.memberInfo[zone+'__'+newName]={id:newId,ip:newIp};
+  }
+  closeModal('edit-member-modal');
+  saveDB({action:`✏️ Edit member ${zone}`,detail:`${originalName} → ${newName}${newId?' | ID:'+newId:''}${newIp?' | IP:'+newIp:''}`});
+  showToast(`${newName} berhasil diupdate!`);
   render();
 }
 
