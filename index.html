@@ -1,0 +1,1156 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no"/>
+<title>WiFi Pay</title>
+<meta name="theme-color" content="#0a0c12"/>
+<meta name="apple-mobile-web-app-capable" content="yes"/>
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"/>
+<meta name="apple-mobile-web-app-title" content="WiFi Pay"/>
+<link rel="manifest" href="manifest.json"/>
+<link rel="icon" href="icon-192.png"/>
+<link rel="apple-touch-icon" href="icon-192.png"/>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@300;400;500&family=Syne:wght@700;800&display=swap" rel="stylesheet"/>
+<!-- Firebase -->
+<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-database-compat.js"></script>
+<!-- SheetJS for Excel -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<!-- jsPDF for PDF -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.31/jspdf.plugin.autotable.min.js"></script>
+<!-- Chart.js -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<style>
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+html,body{height:100%;overflow:hidden}
+body{font-family:'DM Mono',monospace;background:#0a0c12;color:#ddd8cc}
+:root{--zc:#3a7bd5;--zcdim:#1e2a4033;--zc2:#e05c3a}
+::-webkit-scrollbar{width:4px;height:4px}
+::-webkit-scrollbar-track{background:#0e1018}
+::-webkit-scrollbar-thumb{background:#252836;border-radius:3px}
+input,select,button,textarea{font-family:'DM Mono',monospace;outline:none;-webkit-appearance:none;appearance:none}
+select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath fill='%23666' d='M5 6L0 0h10z'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 10px center;padding-right:28px!important}
+img{pointer-events:none}
+
+/* ── SCREENS ── */
+#screen-login,#screen-app{position:fixed;inset:0;transition:opacity .3s}
+#screen-login{background:#0a0c12;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:24px;z-index:200}
+#screen-app{display:flex;flex-direction:column;opacity:0;pointer-events:none}
+#screen-app.visible{opacity:1;pointer-events:all}
+#screen-login.hidden{opacity:0;pointer-events:none}
+
+/* ── LOGIN ── */
+.login-logo{width:72px;height:72px;background:linear-gradient(135deg,#3a7bd5,#2563eb);border-radius:20px;display:flex;align-items:center;justify-content:center;font-size:32px;margin-bottom:20px;box-shadow:0 8px 32px #3a7bd533}
+.login-title{font-family:'Syne',sans-serif;font-size:26px;font-weight:800;letter-spacing:-0.03em;margin-bottom:4px}
+.login-sub{font-size:11px;color:#444;letter-spacing:.1em;margin-bottom:32px}
+.login-box{background:#0e1018;border:1px solid #1e2231;border-radius:14px;padding:24px;width:100%;max-width:360px}
+.login-remember{display:flex;align-items:center;gap:8px;margin-bottom:16px}
+.login-remember input[type=checkbox]{width:16px;height:16px;accent-color:#3a7bd5;cursor:pointer}
+.login-remember label{font-size:12px;color:#666;cursor:pointer}
+.lf-label{font-size:10px;color:#555;letter-spacing:.07em;margin-bottom:6px}
+.lf-input{width:100%;background:#131620;border:1px solid #1e2231;color:#ddd8cc;padding:10px 14px;border-radius:8px;font-size:14px;margin-bottom:14px;transition:border .2s}
+.lf-input:focus{border-color:#3a7bd5}
+.lf-btn{width:100%;background:#3a7bd5;color:#fff;border:none;padding:12px;border-radius:8px;font-size:14px;font-weight:600;cursor:pointer;transition:opacity .2s;margin-bottom:10px}
+.lf-btn:active{opacity:.8}
+.lf-btn.secondary{background:#131620;color:#888;border:1px solid #1e2231}
+.lf-err{font-size:11px;color:#e05c5c;text-align:center;min-height:16px;margin-bottom:8px}
+.lf-switch{font-size:11px;color:#555;text-align:center}
+.lf-switch span{color:#3a7bd5;cursor:pointer}
+.lf-divider{text-align:center;font-size:10px;color:#333;margin:12px 0;position:relative}
+.lf-divider::before{content:'';position:absolute;left:0;top:50%;right:0;height:1px;background:#1e2231}
+.lf-divider span{background:#0e1018;padding:0 10px;position:relative}
+
+/* ── HEADER ── */
+#header{background:#0e1018;border-bottom:1px solid #181b24;padding:10px 14px;flex-shrink:0;z-index:50}
+.hdr-row1{display:flex;align-items:center;gap:10px;margin-bottom:8px}
+.logo-sm{width:30px;height:30px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:14px;flex-shrink:0;transition:background .3s}
+.app-name{font-family:'Syne',sans-serif;font-weight:800;font-size:14px;letter-spacing:-.02em}
+.app-user{font-size:9px;color:#444;letter-spacing:.06em}
+.zone-sw{display:flex;gap:3px;background:#131620;padding:3px;border-radius:24px;border:1px solid #1e2231;margin-left:auto}
+.zbtn{padding:5px 14px;border-radius:20px;border:none;cursor:pointer;font-size:11px;font-weight:500;transition:all .2s;background:transparent;color:#555}
+.zbtn.krs{background:#3a7bd5;color:#fff}
+.zbtn.slk{background:#e05c3a;color:#fff}
+.hdr-row2{display:flex;gap:6px;align-items:center;flex-wrap:wrap}
+.hbtn{padding:5px 10px;border-radius:6px;border:1px solid #1e2231;background:#131620;color:#777;cursor:pointer;font-size:10px;transition:all .2s;white-space:nowrap}
+.hbtn:active{opacity:.7}
+.sync-dot{width:6px;height:6px;border-radius:50%;background:#5bcea6;display:inline-block;margin-right:4px;animation:pulse 2s infinite}
+.sync-dot.off{background:#e05c5c;animation:none}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
+
+/* ── CONTENT ── */
+#content{flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;padding:12px 12px 80px}
+
+/* ── BOTTOM NAV ── */
+#bnav{position:fixed;bottom:0;left:0;right:0;background:#0e1018;border-top:1px solid #181b24;display:flex;z-index:50;padding-bottom:env(safe-area-inset-bottom)}
+.nb{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:8px 4px 6px;border:none;background:none;cursor:pointer;color:#3a3f55;font-size:9px;gap:2px;transition:color .2s}
+.nb .ni{font-size:17px}
+.nb.on{color:var(--zc)}
+
+/* ── CONTROLS ── */
+.ctrl-row{display:flex;gap:7px;margin-bottom:10px;flex-wrap:wrap}
+.cs{background:#131620;border:1px solid #1e2231;color:#ddd8cc;padding:7px 10px;border-radius:7px;font-size:12px;flex:1;min-width:70px}
+.search-box{width:100%;background:#131620;border:1px solid #1e2231;color:#ddd8cc;padding:8px 12px;border-radius:7px;font-size:12px;margin-bottom:10px}
+.frow{display:flex;gap:5px;margin-bottom:10px;flex-wrap:wrap}
+.fchip{background:none;border:1px solid #1e2231;color:#555;padding:4px 12px;border-radius:20px;cursor:pointer;font-size:11px;transition:all .2s}
+.fchip.on{border-color:var(--zc);color:var(--zc);background:var(--zcdim)}
+
+/* ── SUMMARY BAR ── */
+.sum-bar{background:#0e1018;border:1px solid #181b24;border-radius:9px;padding:10px 14px;margin-bottom:10px;display:flex;justify-content:space-between;align-items:center}
+.sum-lbl{font-size:9px;color:#444;letter-spacing:.06em}
+.sum-val{font-family:'Syne',sans-serif;font-size:19px;font-weight:800;color:var(--zc)}
+.stat-row{display:flex;gap:7px;margin-bottom:10px}
+.sbox{flex:1;background:#0e1018;border:1px solid #181b24;border-radius:8px;padding:8px 10px}
+.sbox-l{font-size:9px;color:#555}
+.sbox-v{font-family:'Syne',sans-serif;font-size:19px;font-weight:700}
+
+/* ── MEMBER CARD ── */
+.mcard{background:#0e1018;border:1px solid #181b24;border-radius:9px;margin-bottom:6px;overflow:hidden;transition:border .2s}
+.mcard.expanded{border-color:var(--zc)}
+.mc-top{display:flex;align-items:center;gap:8px;padding:10px 12px;cursor:pointer}
+.mc-id{font-size:9px;color:#3a7bd5;background:#1e2a4022;border:1px solid #3a7bd522;padding:2px 6px;border-radius:4px;cursor:pointer;text-decoration:none;flex-shrink:0}
+.mc-id.no-link{color:#444;background:transparent;border-color:#1e2231;cursor:default;pointer-events:none}
+.mc-num{font-size:10px;color:#333;width:18px;flex-shrink:0}
+.mc-name{font-size:13px;font-weight:500;flex:1}
+.mc-tag{font-size:9px;padding:2px 7px;border-radius:10px;flex-shrink:0}
+.tpaid{background:#0d2b1f;color:#5bcea6;border:1px solid #5bcea622}
+.tunpaid{background:#1f0d0d;color:#e05c5c;border:1px solid #e05c5c22}
+.mc-body{border-top:1px solid #111318;padding:10px 12px}
+.mc-row{display:flex;gap:8px;align-items:center;margin-bottom:8px;flex-wrap:wrap}
+.mc-label{font-size:10px;color:#555;width:70px;flex-shrink:0}
+.mc-val{font-size:14px;color:#5bcea6;flex:1}
+.mc-val.empty{color:#2a2d3a;font-style:italic;font-size:11px}
+.mc-input{background:#131620;border:1px solid var(--zc);color:#ddd8cc;padding:7px 10px;border-radius:6px;font-size:13px;width:130px;text-align:center}
+.mc-date{background:#131620;border:1px solid #1e2231;color:#ddd8cc;padding:6px 10px;border-radius:6px;font-size:12px;width:150px}
+.mc-date:focus{border-color:var(--zc)}
+.qrow{display:flex;gap:4px;flex-wrap:wrap}
+.qb{background:#131620;border:1px solid #1e2231;color:#777;padding:5px 9px;border-radius:5px;cursor:pointer;font-size:11px;transition:all .15s}
+.qb:active{background:var(--zcdim);border-color:var(--zc);color:var(--zc)}
+.delbtn{background:none;border:1px solid #2a1a1a;color:#4a2a2a;padding:5px 9px;border-radius:5px;cursor:pointer;font-size:11px}
+.delbtn:active{background:#3d1414;color:#ef4444}
+.save-row{display:flex;gap:6px;justify-content:flex-end;margin-top:8px}
+.sbtn{padding:7px 16px;border-radius:6px;border:none;cursor:pointer;font-size:11px;font-weight:600;transition:all .2s}
+.sbtn.primary{background:var(--zc);color:#fff}
+.sbtn.ghost{background:#131620;border:1px solid #1e2231;color:#888}
+
+/* ── REKAP TABLE ── */
+.rekap-wrap{overflow-x:auto;-webkit-overflow-scrolling:touch;border-radius:10px;border:1px solid #181b24}
+.rtable{border-collapse:collapse;font-size:11px;width:100%}
+.rtable th{padding:8px 7px;font-size:9px;color:#444;font-weight:500;letter-spacing:.06em;white-space:nowrap;background:#0e1018;position:sticky;top:0;z-index:3}
+.rtable th.stk{position:sticky;z-index:4!important}
+.rtable td{padding:6px 7px;border-bottom:1px solid #0a0c12;white-space:nowrap;text-align:center;cursor:pointer}
+.rtable td.stk{position:sticky;background:#0e1018;z-index:2;text-align:left}
+.rtable tr:hover td{background:#111318}
+.rtable tr:hover td.stk{background:#111318}
+.cv{color:#5bcea6}.cz{color:#555}.cn{color:#1e2231;font-style:italic}
+
+/* ── TUNGGAKAN ── */
+.tcard{background:#0e1018;border:1px solid #e05c5c33;border-radius:9px;padding:12px;margin-bottom:6px}
+.tcard-name{font-size:13px;font-weight:500;margin-bottom:6px}
+.tcard-months{display:flex;gap:5px;flex-wrap:wrap}
+.tmonth{background:#1f0d0d;color:#e05c5c;border:1px solid #e05c5c22;padding:3px 9px;border-radius:12px;font-size:10px}
+
+/* ── GRAFIK ── */
+.chart-box{background:#0e1018;border:1px solid #181b24;border-radius:10px;padding:14px;margin-bottom:12px}
+.chart-title{font-size:10px;color:#555;letter-spacing:.07em;margin-bottom:12px}
+.chart-wrap{position:relative;height:200px}
+
+/* ── LOG ── */
+.log-item{background:#0e1018;border:1px solid #181b24;border-radius:8px;padding:10px 12px;margin-bottom:5px}
+.log-time{font-size:9px;color:#444}
+.log-action{font-size:12px;margin-top:2px}
+.log-detail{font-size:10px;color:#666;margin-top:2px}
+
+/* ── MEMBER PAGE ── */
+.add-form{background:#0e1018;border:1px solid #181b24;border-radius:10px;padding:14px;margin-bottom:14px}
+.af-title{font-size:10px;color:#555;letter-spacing:.07em;margin-bottom:10px}
+.af-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px}
+.af-input{background:#131620;border:1px solid #1e2231;color:#ddd8cc;padding:8px 12px;border-radius:7px;font-size:12px;width:100%}
+.af-input:focus{border-color:var(--zc)}
+.mem-section{margin-bottom:16px}
+.ms-hdr{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;padding-bottom:6px;border-bottom:1px solid #181b24}
+.ms-title{font-family:'Syne',sans-serif;font-weight:800;font-size:13px}
+.mem-row{background:#0e1018;border:1px solid #181b24;border-radius:7px;padding:9px 12px;margin-bottom:4px;display:flex;align-items:center;gap:8px}
+.mem-id-badge{font-size:9px;color:#3a7bd5;background:#1e2a4022;border:1px solid #3a7bd522;padding:2px 6px;border-radius:4px;min-width:45px;text-align:center}
+.mem-name-txt{font-size:12px;flex:1}
+.mem-ip-txt{font-size:10px;color:#555;max-width:130px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+
+/* ── SHARE MODAL ── */
+.modal-bg{position:fixed;inset:0;background:#000a;z-index:300;display:flex;align-items:flex-end}
+.modal-bg.center{align-items:center;justify-content:center;padding:20px}
+.modal{background:#0e1018;border:1px solid #1e2231;border-radius:16px 16px 0 0;padding:20px;width:100%;max-height:85vh;overflow-y:auto}
+.modal.center{border-radius:14px;max-width:380px;width:100%}
+.modal-title{font-family:'Syne',sans-serif;font-weight:800;font-size:15px;margin-bottom:16px;display:flex;justify-content:space-between;align-items:center}
+.modal-close{background:none;border:none;color:#555;font-size:18px;cursor:pointer;padding:4px}
+.modal-row{margin-bottom:12px}
+.modal-label{font-size:10px;color:#555;letter-spacing:.06em;margin-bottom:5px}
+.modal-select{width:100%;background:#131620;border:1px solid #1e2231;color:#ddd8cc;padding:9px 12px;border-radius:7px;font-size:13px}
+.format-row{display:flex;gap:8px}
+.fmt-btn{flex:1;padding:10px;border-radius:8px;border:1px solid #1e2231;background:#131620;color:#888;cursor:pointer;font-size:12px;text-align:center;transition:all .2s}
+.fmt-btn.on{border-color:var(--zc);color:var(--zc);background:var(--zcdim)}
+.modal-action{width:100%;padding:12px;border-radius:8px;border:none;background:var(--zc);color:#fff;font-size:13px;font-weight:600;cursor:pointer;margin-top:8px}
+.modal-action:active{opacity:.8}
+
+/* ── TOAST ── */
+.toast{position:fixed;bottom:76px;left:50%;transform:translateX(-50%);padding:9px 16px;border-radius:8px;font-size:11px;z-index:999;white-space:nowrap;animation:tIn .25s ease;pointer-events:none}
+.tok{background:#0d2b1f;color:#5bcea6;border:1px solid #5bcea633}
+.terr{background:#1f0d0d;color:#e05c5c;border:1px solid #e05c5c33}
+.tinfo{background:#1a2035;color:#7aa3e0;border:1px solid #3a7bd533}
+@keyframes tIn{from{transform:translateX(-50%) translateY(8px);opacity:0}to{transform:translateX(-50%) translateY(0);opacity:1}}
+
+/* ── INSTALL BANNER ── */
+.inst-banner{background:#0d2b1f;border:1px solid #5bcea633;border-radius:9px;padding:10px 12px;margin-bottom:12px;display:flex;align-items:center;gap:10px}
+.inst-txt{flex:1;font-size:11px;color:#5bcea6;line-height:1.5}
+.inst-btn{background:#5bcea6;color:#0a0c12;border:none;padding:6px 12px;border-radius:6px;font-size:11px;cursor:pointer;font-weight:700}
+
+/* ── ACCOUNT MODAL ── */
+.acc-modal{background:#0e1018;border:1px solid #1e2231;border-radius:14px 14px 0 0;padding:20px;width:100%}
+</style>
+</head>
+<body>
+
+<!-- ══ LOGIN SCREEN ══ -->
+<div id="screen-login">
+  <div class="login-logo">📶</div>
+  <div class="login-title">WiFi Pay</div>
+  <div class="login-sub">SISTEM IURAN BULANAN</div>
+  <div class="login-box" id="login-box">
+    <div id="login-remembered" style="display:none">
+      <div style="text-align:center;margin-bottom:16px">
+        <div style="font-size:13px;color:#ddd8cc" id="remembered-email"></div>
+        <div style="font-size:10px;color:#555;margin-top:3px">akun tersimpan</div>
+      </div>
+      <button class="lf-btn" onclick="loginRemembered()">🚀 Lanjutkan</button>
+      <button class="lf-btn secondary" onclick="showSwitchAccount()">↔ Ganti Akun</button>
+    </div>
+    <div id="login-form">
+      <div class="lf-label">EMAIL</div>
+      <input class="lf-input" id="lf-email" type="email" inputmode="email" placeholder="email@gmail.com"/>
+      <div class="lf-label">PASSWORD</div>
+      <input class="lf-input" id="lf-pass" type="password" placeholder="••••••••"
+        onkeydown="if(event.key==='Enter')doLogin()"/>
+      <div class="login-remember">
+        <input type="checkbox" id="cb-remember" checked/>
+        <label for="cb-remember">Ingat akun ini</label>
+      </div>
+      <div class="lf-err" id="lf-err"></div>
+      <button class="lf-btn" id="lf-submit" onclick="doLogin()">Masuk</button>
+      <div class="lf-divider"><span>atau</span></div>
+      <div class="lf-switch">Belum punya akun? <span onclick="showRegister()">Daftar di sini</span></div>
+    </div>
+    <div id="register-form" style="display:none">
+      <div class="lf-label">EMAIL</div>
+      <input class="lf-input" id="rf-email" type="email" inputmode="email" placeholder="email@gmail.com"/>
+      <div class="lf-label">PASSWORD (min 6 karakter)</div>
+      <input class="lf-input" id="rf-pass" type="password" placeholder="••••••••"/>
+      <div class="lf-label">NAMA PENGGUNA</div>
+      <input class="lf-input" id="rf-name" type="text" placeholder="Nama kamu"/>
+      <div class="lf-err" id="rf-err"></div>
+      <button class="lf-btn" onclick="doRegister()">Daftar & Masuk</button>
+      <div class="lf-divider"><span>atau</span></div>
+      <div class="lf-switch">Sudah punya akun? <span onclick="showLogin()">Masuk di sini</span></div>
+    </div>
+  </div>
+</div>
+
+<!-- ══ APP SCREEN ══ -->
+<div id="screen-app">
+  <div id="header">
+    <div class="hdr-row1">
+      <div class="logo-sm" id="logo">📶</div>
+      <div>
+        <div class="app-name">WiFi Pay</div>
+        <div class="app-user" id="hdr-user">—</div>
+      </div>
+      <div class="zone-sw">
+        <button class="zbtn krs" onclick="switchZone('KRS')">KRS</button>
+        <button class="zbtn" onclick="switchZone('SLK')">SLK</button>
+      </div>
+    </div>
+    <div class="hdr-row2">
+      <span><span class="sync-dot" id="sdot"></span><span style="font-size:10px;color:#444" id="sync-lbl">sync...</span></span>
+      <button class="hbtn" onclick="showShareModal()">📤 Share</button>
+      <button class="hbtn" onclick="showExportModal()">⬇ Export</button>
+      <button class="hbtn" onclick="document.getElementById('imp-file').click()">⬆ Import</button>
+      <input type="file" id="imp-file" accept=".json" onchange="importData(event)" style="display:none"/>
+      <button class="hbtn" onclick="showAccountModal()" style="margin-left:auto">👤</button>
+    </div>
+  </div>
+  <div id="content"></div>
+  <div id="bnav">
+    <button class="nb on" data-v="entry" onclick="setView('entry')"><span class="ni">📝</span>Entry</button>
+    <button class="nb" data-v="rekap" onclick="setView('rekap')"><span class="ni">📊</span>Rekap</button>
+    <button class="nb" data-v="tunggakan" onclick="setView('tunggakan')"><span class="ni">⚠️</span>Tunggak</button>
+    <button class="nb" data-v="grafik" onclick="setView('grafik')"><span class="ni">📈</span>Grafik</button>
+    <button class="nb" data-v="log" onclick="setView('log')"><span class="ni">🗂️</span>Log</button>
+    <button class="nb" data-v="members" onclick="setView('members')"><span class="ni">👥</span>Member</button>
+  </div>
+</div>
+
+<!-- ══ SHARE MODAL ══ -->
+<div class="modal-bg" id="share-modal" style="display:none" onclick="if(event.target===this)closeModal('share-modal')">
+  <div class="modal">
+    <div class="modal-title">📤 Share Rekap<button class="modal-close" onclick="closeModal('share-modal')">✕</button></div>
+    <div class="modal-row">
+      <div class="modal-label">TIPE REKAP</div>
+      <div class="format-row">
+        <button class="fmt-btn on" id="share-type-monthly" onclick="setShareType('monthly')">Bulanan</button>
+        <button class="fmt-btn" id="share-type-yearly" onclick="setShareType('yearly')">Tahunan</button>
+      </div>
+    </div>
+    <div class="modal-row" id="share-month-row">
+      <div class="modal-label">BULAN</div>
+      <select class="modal-select" id="share-month"></select>
+    </div>
+    <div class="modal-row">
+      <div class="modal-label">TAHUN</div>
+      <select class="modal-select" id="share-year"></select>
+    </div>
+    <div class="modal-row">
+      <div class="modal-label">ZONA</div>
+      <select class="modal-select" id="share-zone">
+        <option value="KRS">KRS</option>
+        <option value="SLK">SLK</option>
+        <option value="ALL">KRS + SLK (Gabungan)</option>
+      </select>
+    </div>
+    <div class="modal-row">
+      <div class="modal-label">FORMAT</div>
+      <div class="format-row">
+        <button class="fmt-btn on" id="fmt-pdf" onclick="setFmt('pdf')">📄 PDF</button>
+        <button class="fmt-btn" id="fmt-excel" onclick="setFmt('excel')">📊 Excel</button>
+      </div>
+    </div>
+    <button class="modal-action" onclick="doShare()">Generate & Share via WhatsApp</button>
+  </div>
+</div>
+
+<!-- ══ EXPORT MODAL ══ -->
+<div class="modal-bg" id="export-modal" style="display:none" onclick="if(event.target===this)closeModal('export-modal')">
+  <div class="modal">
+    <div class="modal-title">⬇ Export Data<button class="modal-close" onclick="closeModal('export-modal')">✕</button></div>
+    <div class="modal-row">
+      <div class="modal-label">FORMAT</div>
+      <div class="format-row">
+        <button class="fmt-btn on" id="exp-fmt-json" onclick="setExpFmt('json')">💾 JSON (Backup)</button>
+        <button class="fmt-btn" id="exp-fmt-csv" onclick="setExpFmt('csv')">📊 CSV</button>
+      </div>
+    </div>
+    <div id="exp-csv-opts" style="display:none">
+      <div class="modal-row">
+        <div class="modal-label">TAHUN</div>
+        <select class="modal-select" id="exp-year"></select>
+      </div>
+      <div class="modal-row">
+        <div class="modal-label">ZONA</div>
+        <select class="modal-select" id="exp-zone">
+          <option value="KRS">KRS</option><option value="SLK">SLK</option>
+        </select>
+      </div>
+    </div>
+    <button class="modal-action" onclick="doExport()">Download</button>
+  </div>
+</div>
+
+<!-- ══ ACCOUNT MODAL ══ -->
+<div class="modal-bg" id="account-modal" style="display:none" onclick="if(event.target===this)closeModal('account-modal')">
+  <div class="modal">
+    <div class="modal-title">👤 Akun<button class="modal-close" onclick="closeModal('account-modal')">✕</button></div>
+    <div style="background:#131620;border-radius:8px;padding:12px;margin-bottom:14px">
+      <div style="font-size:10px;color:#555;margin-bottom:4px">LOGIN SEBAGAI</div>
+      <div style="font-size:13px" id="acc-email-display"></div>
+    </div>
+    <button class="lf-btn secondary" onclick="switchAccount()" style="margin-bottom:8px">↔ Ganti Akun</button>
+    <button class="lf-btn" style="background:#1f0d0d;color:#e05c5c;border:1px solid #e05c5c33" onclick="doLogout()">Keluar</button>
+  </div>
+</div>
+
+<script>
+// ══════════════════════════════════════════
+// FIREBASE CONFIG
+// ══════════════════════════════════════════
+firebase.initializeApp({
+  apiKey:"AIzaSyAgHjQTmxzlHi0G92-480hMhmcNszNKJWI",
+  authDomain:"my-project-b755b.firebaseapp.com",
+  databaseURL:"https://my-project-b755b-default-rtdb.asia-southeast1.firebasedatabase.app",
+  projectId:"my-project-b755b",
+  storageBucket:"my-project-b755b.firebasestorage.app",
+  messagingSenderId:"687940269514",
+  appId:"1:687940269514:web:88dd265cf9ccfd10d38b33"
+});
+const auth = firebase.auth();
+const db = firebase.database();
+
+// ══════════════════════════════════════════
+// CONSTANTS
+// ══════════════════════════════════════════
+const MONTHS=["Jan","Feb","Mar","Apr","Mei","Jun","Jul","Agt","Sep","Okt","Nov","Des"];
+const YEARS=[2023,2024,2025,2026,2027,2028];
+const QUICK=[50,80,90,100,150,200];
+const DEFAULT_KRS=["ABIL","ADIT","AJI","AKBAR","ALFIN","ANA","ARPAN","AYU NANDA","B.IKE","B.NINGSIH","B.WULAN","BAGAS","BERI","CECEK","DAYAT","DIKA JON","DISTY","ELLA","ESRA","FARHAN","FEBI","FERA","FIRLI","GILANG","GO","HABIBAH","HABIL","HALIK","HAMIM","ICAN","IING","IMAMAH","INTAN GN","LENI","LILIS","MAHRUS","MAY","MUHAMMAD","NATUL","NIA","NININ","NONIK","P.BUDI","PUPUT","QORI","RAGIL","RANI","RIA","RIFA","RILA","RIRIB","RYAN","SDN","SIFA","SURYA","UCI","VINA","VIO","WARSA","WAWAN","WILDA","WILDAN","YENI","ZEN"];
+const DEFAULT_SLK=["AFAN","AIDI","AMIN","ANAS","ANGGUN","ANIS","BAY","CLARA","DAIFI","DHEA","DIKRI","ELIYA","ERFAN","FAHMI","FAIL","FATIA","FIROCH","GUNAWAN","H.MUALIS","HAIKAL","HENDRA","IKROM","INUL","IPUL","IRHAM","LUKMAN","MAHRUS","MAKSUM","MAY","MELLY","NAFIS","NAUFAL","NIA SALAK","NISA","NURIL","OPEK","P.IIL","RIFKI","RINA","ROBI","ROSI","SAMSUDI","SATAM","SHELA","SHOFIA","SOFI","SUKI","SUTIK","UUS","VIVI","WAHYU","WARDA","ZAHDAN"];
+
+// ══════════════════════════════════════════
+// STATE
+// ══════════════════════════════════════════
+let currentUser=null, uid=null;
+let appData={krsMembers:[...DEFAULT_KRS],slkMembers:[...DEFAULT_SLK],payments:{},memberInfo:{},activityLog:[]};
+let activeZone="KRS", currentView="entry";
+let selYear=new Date().getFullYear(), selMonth=new Date().getMonth();
+let search="", filterStatus="all", expandedCard=null;
+let newMemberZone="KRS";
+let shareType="monthly", shareFmt="pdf", expFmt="json";
+let dbRef=null, deferredPrompt=null;
+let chartInstances={};
+let pendingEdits={};
+
+// ══════════════════════════════════════════
+// AUTH
+// ══════════════════════════════════════════
+function showLogin(){
+  document.getElementById('login-form').style.display='';
+  document.getElementById('register-form').style.display='none';
+  document.getElementById('login-remembered').style.display='none';
+}
+function showRegister(){
+  document.getElementById('login-form').style.display='none';
+  document.getElementById('register-form').style.display='';
+  document.getElementById('login-remembered').style.display='none';
+}
+function showSwitchAccount(){
+  document.getElementById('login-remembered').style.display='none';
+  document.getElementById('login-form').style.display='';
+  document.getElementById('lf-email').value='';
+  document.getElementById('lf-pass').value='';
+}
+
+async function doLogin(){
+  const email=document.getElementById('lf-email').value.trim();
+  const pass=document.getElementById('lf-pass').value;
+  const remember=document.getElementById('cb-remember').checked;
+  document.getElementById('lf-err').textContent='';
+  if(!email||!pass){document.getElementById('lf-err').textContent='Email dan password wajib diisi';return;}
+  document.getElementById('lf-submit').textContent='Masuk...';
+  try{
+    await auth.setPersistence(remember?firebase.auth.Auth.Persistence.LOCAL:firebase.auth.Auth.Persistence.SESSION);
+    await auth.signInWithEmailAndPassword(email,pass);
+    if(remember) localStorage.setItem('wp_remember_email',email);
+  }catch(e){
+    document.getElementById('lf-err').textContent=friendlyAuthError(e.code);
+    document.getElementById('lf-submit').textContent='Masuk';
+  }
+}
+
+async function doRegister(){
+  const email=document.getElementById('rf-email').value.trim();
+  const pass=document.getElementById('rf-pass').value;
+  const name=document.getElementById('rf-name').value.trim();
+  document.getElementById('rf-err').textContent='';
+  if(!email||!pass||!name){document.getElementById('rf-err').textContent='Semua field wajib diisi';return;}
+  if(pass.length<6){document.getElementById('rf-err').textContent='Password minimal 6 karakter';return;}
+  try{
+    const cred=await auth.createUserWithEmailAndPassword(email,pass);
+    await cred.user.updateProfile({displayName:name});
+    localStorage.setItem('wp_remember_email',email);
+  }catch(e){
+    document.getElementById('rf-err').textContent=friendlyAuthError(e.code);
+  }
+}
+
+async function loginRemembered(){
+  const email=localStorage.getItem('wp_remember_email');
+  if(!email)return showLogin();
+  // Try auto sign-in via persistence
+  showToast('Memuat...','info');
+}
+
+function showAccountModal(){
+  document.getElementById('acc-email-display').textContent=currentUser?.email||'—';
+  document.getElementById('account-modal').style.display='flex';
+}
+function switchAccount(){
+  closeModal('account-modal');
+  auth.signOut().then(()=>{
+    localStorage.removeItem('wp_remember_email');
+    showLoginScreen();
+  });
+}
+async function doLogout(){
+  closeModal('account-modal');
+  await auth.signOut();
+  localStorage.removeItem('wp_remember_email');
+  showLoginScreen();
+}
+
+function friendlyAuthError(code){
+  const map={'auth/invalid-email':'Email tidak valid','auth/user-not-found':'Akun tidak ditemukan','auth/wrong-password':'Password salah','auth/email-already-in-use':'Email sudah terdaftar','auth/weak-password':'Password terlalu lemah','auth/invalid-credential':'Email atau password salah'};
+  return map[code]||'Terjadi kesalahan, coba lagi';
+}
+
+function showLoginScreen(){
+  document.getElementById('screen-login').classList.remove('hidden');
+  document.getElementById('screen-app').classList.remove('visible');
+  const savedEmail=localStorage.getItem('wp_remember_email');
+  if(savedEmail){
+    document.getElementById('remembered-email').textContent=savedEmail;
+    document.getElementById('login-remembered').style.display='';
+    document.getElementById('login-form').style.display='none';
+    document.getElementById('register-form').style.display='none';
+  } else {
+    showLogin();
+  }
+}
+
+function showAppScreen(user){
+  currentUser=user; uid=user.uid;
+  document.getElementById('screen-login').classList.add('hidden');
+  document.getElementById('screen-app').classList.add('visible');
+  document.getElementById('hdr-user').textContent=user.displayName||user.email;
+  document.getElementById('acc-email-display').textContent=user.email;
+  initDB();
+}
+
+// ══════════════════════════════════════════
+// FIREBASE DB
+// ══════════════════════════════════════════
+function initDB(){
+  setSyncStatus('loading');
+  dbRef=db.ref('users/'+uid+'/data');
+  dbRef.on('value',snap=>{
+    const val=snap.val();
+    if(val){
+      appData=Object.assign({krsMembers:[...DEFAULT_KRS],slkMembers:[...DEFAULT_SLK],payments:{},memberInfo:{},activityLog:[]},val);
+      if(!appData.activityLog) appData.activityLog=[];
+      if(!appData.memberInfo) appData.memberInfo={};
+    }
+    setSyncStatus('ok');
+    render();
+  },err=>{setSyncStatus('err');});
+}
+
+function saveDB(logEntry){
+  if(!dbRef) return;
+  setSyncStatus('loading');
+  if(logEntry){
+    if(!appData.activityLog) appData.activityLog=[];
+    appData.activityLog.unshift({...logEntry,ts:Date.now(),user:currentUser?.email||'—'});
+    if(appData.activityLog.length>200) appData.activityLog=appData.activityLog.slice(0,200);
+  }
+  dbRef.set(appData).then(()=>setSyncStatus('ok')).catch(()=>setSyncStatus('err'));
+}
+
+function setSyncStatus(s){
+  const dot=document.getElementById('sdot');
+  const lbl=document.getElementById('sync-lbl');
+  if(!dot||!lbl)return;
+  if(s==='ok'){dot.classList.remove('off');lbl.textContent='tersimpan';}
+  else if(s==='err'){dot.classList.add('off');lbl.textContent='gagal sync';}
+  else{dot.classList.remove('off');lbl.textContent='menyimpan...';}
+}
+
+// Auth state
+auth.onAuthStateChanged(user=>{
+  if(user) showAppScreen(user);
+  else showLoginScreen();
+});
+
+// ══════════════════════════════════════════
+// HELPERS
+// ══════════════════════════════════════════
+function getKey(zone,name,year,month){return `${zone}__${name}__${year}__${month}`;}
+function getPay(zone,name,year,month){return appData.payments?.[getKey(zone,name,year,month)]??null;}
+function members(){return activeZone==='KRS'?appData.krsMembers:appData.slkMembers;}
+function getInfo(name){return appData.memberInfo?.[activeZone+'__'+name]||{};}
+
+function setZoneColor(z){
+  const zc=z==='KRS'?'#3a7bd5':'#e05c3a';
+  const zcdim=z==='KRS'?'#1e2a4033':'#3d1f1433';
+  document.documentElement.style.setProperty('--zc',zc);
+  document.documentElement.style.setProperty('--zcdim',zcdim);
+  document.getElementById('logo').style.background=`linear-gradient(135deg,${zc},${zc}99)`;
+  document.querySelectorAll('.nb').forEach(b=>b.style.setProperty('--zc',zc));
+}
+
+let toastT;
+function showToast(msg,type='ok'){
+  clearTimeout(toastT);
+  let el=document.querySelector('.toast');
+  if(!el){el=document.createElement('div');document.body.appendChild(el);}
+  el.className=`toast t${type}`;el.textContent=msg;el.style.display='block';
+  toastT=setTimeout(()=>{if(el)el.style.display='none';},2800);
+}
+
+function closeModal(id){document.getElementById(id).style.display='none';}
+
+// ══════════════════════════════════════════
+// ZONE & VIEW
+// ══════════════════════════════════════════
+function switchZone(z){
+  activeZone=z; search=''; filterStatus='all'; expandedCard=null;
+  setZoneColor(z);
+  document.querySelectorAll('.zbtn').forEach(b=>{
+    b.className='zbtn';
+    if(b.textContent===z) b.classList.add(z==='KRS'?'krs':'slk');
+  });
+  render();
+}
+
+function setView(v){
+  currentView=v; expandedCard=null; search='';
+  document.querySelectorAll('.nb').forEach(b=>b.classList.toggle('on',b.dataset.v===v));
+  render();
+}
+
+// ══════════════════════════════════════════
+// RENDER ROUTER
+// ══════════════════════════════════════════
+function render(){
+  const c=document.getElementById('content');
+  if(!c)return;
+  Object.values(chartInstances).forEach(ch=>{try{ch.destroy();}catch(e){}});
+  chartInstances={};
+  if(currentView==='entry') c.innerHTML=renderEntry();
+  else if(currentView==='rekap') c.innerHTML=renderRekap();
+  else if(currentView==='tunggakan') c.innerHTML=renderTunggakan();
+  else if(currentView==='grafik') c.innerHTML=renderGrafik();
+  else if(currentView==='log') c.innerHTML=renderLog();
+  else c.innerHTML=renderMembers();
+  attachEvents();
+  if(currentView==='grafik') setTimeout(initCharts,50);
+}
+
+// ══════════════════════════════════════════
+// ENTRY VIEW
+// ══════════════════════════════════════════
+function filteredMembers(){
+  let m=members().filter(x=>x.toLowerCase().includes(search.toLowerCase()));
+  if(filterStatus==='paid') m=m.filter(x=>(getPay(activeZone,x,selYear,selMonth)||0)>0);
+  if(filterStatus==='unpaid') m=m.filter(x=>getPay(activeZone,x,selYear,selMonth)===null);
+  return m;
+}
+
+function renderEntry(){
+  const mems=filteredMembers();
+  const total=members().reduce((s,m)=>s+(getPay(activeZone,m,selYear,selMonth)||0),0);
+  const paid=members().filter(m=>(getPay(activeZone,m,selYear,selMonth)||0)>0).length;
+  const unpaid=members().filter(m=>getPay(activeZone,m,selYear,selMonth)===null).length;
+  const moOpts=MONTHS.map((m,i)=>`<option value="${i}"${i===selMonth?' selected':''}>${m}</option>`).join('');
+  const yrOpts=YEARS.map(y=>`<option value="${y}"${y===selYear?' selected':''}>${y}</option>`).join('');
+  const banner=deferredPrompt?`<div class="inst-banner"><div class="inst-txt">📲 Install WiFi Pay ke layar beranda!</div><button class="inst-btn" onclick="installPWA()">Install</button></div>`:'';
+  const cards=mems.map((name,i)=>{
+    const val=getPay(activeZone,name,selYear,selMonth);
+    const info=getInfo(name);
+    const exp=expandedCard===name;
+    const idEl=info.id?(info.ip?`<a class="mc-id" href="${info.ip.startsWith('http')?info.ip:'http://'+info.ip}" target="_blank">${info.id}</a>`:`<span class="mc-id no-link">${info.id}</span>`):'';
+    const tagEl=val>0?`<span class="mc-tag tpaid">✓</span>`:val===null?`<span class="mc-tag tunpaid">✕</span>`:`<span style="font-size:9px;color:#444">○</span>`;
+    const body=exp?`
+    <div class="mc-body">
+      <div class="mc-row">
+        <span class="mc-label">JUMLAH</span>
+        <input class="mc-input" type="number" inputmode="numeric" placeholder="0" value="${val!==null?val:''}" data-name="${name}" id="inp-${name.replace(/\s/g,'_')}"/>
+        ${val!==null?`<button class="delbtn" onclick="clearPay('${name}')">✕</button>`:''}
+      </div>
+      <div class="mc-row">
+        <span class="mc-label">TGL BAYAR</span>
+        <input class="mc-date" type="date" value="${info['date_'+selYear+'_'+selMonth]||''}" data-field="date_${selYear}_${selMonth}" data-name="${name}" onchange="saveInfoField(this)"/>
+      </div>
+      <div class="mc-row"><span class="mc-label">QUICK</span>
+        <div class="qrow">${QUICK.map(a=>`<button class="qb" onclick="quickPay('${name}',${a})">${a}</button>`).join('')}</div>
+      </div>
+    </div>`:'';
+    return `<div class="mcard${exp?' expanded':''}" id="card-${name.replace(/\s/g,'_')}">
+      <div class="mc-top" onclick="toggleCard('${name}')">
+        ${idEl}<span class="mc-num">${i+1}</span>
+        <span class="mc-name">${name}</span>
+        ${val!==null?`<span style="font-size:11px;color:#5bcea6">${val.toLocaleString('id-ID')}</span>`:''}
+        ${tagEl}
+        <span style="color:#333;font-size:12px;margin-left:4px">${exp?'▲':'▼'}</span>
+      </div>${body}</div>`;
+  }).join('');
+  return `${banner}
+  <div class="ctrl-row">
+    <select class="cs" onchange="selMonth=+this.value;render()">${moOpts}</select>
+    <select class="cs" onchange="selYear=+this.value;render()">${yrOpts}</select>
+  </div>
+  <input class="search-box" placeholder="🔍 Cari nama..." value="${search}" oninput="search=this.value;render()"/>
+  <div class="frow">
+    ${[['all','Semua'],['paid','Lunas'],['unpaid','Belum']].map(([v,l])=>`<button class="fchip${filterStatus===v?' on':''}" onclick="filterStatus='${v}';render()">${l}</button>`).join('')}
+  </div>
+  <div class="sum-bar">
+    <div><div class="sum-lbl">${MONTHS[selMonth]} ${selYear} · ${activeZone}</div><div class="sum-val">Rp ${total.toLocaleString('id-ID')}</div></div>
+    <div style="text-align:right;font-size:11px;color:#555;line-height:2">
+      <span style="color:#5bcea6">✓ ${paid}</span>&nbsp;<span style="color:#e05c5c">✕ ${unpaid}</span>
+    </div>
+  </div>
+  ${cards}`;
+}
+
+// ══════════════════════════════════════════
+// REKAP VIEW
+// ══════════════════════════════════════════
+function renderRekap(){
+  const mems=members().filter(m=>m.toLowerCase().includes(search.toLowerCase()));
+  const yrOpts=YEARS.map(y=>`<option value="${y}"${y===selYear?' selected':''}>${y}</option>`).join('');
+  const grand=MONTHS.reduce((s,_,mi)=>s+members().reduce((ss,m)=>ss+(getPay(activeZone,m,selYear,mi)||0),0),0);
+  const rows=mems.map((name,i)=>{
+    let rt=0;
+    const cells=MONTHS.map((_,mi)=>{
+      const v=getPay(activeZone,name,selYear,mi);rt+=v||0;
+      return `<td class="${v>0?'cv':v===0?'cz':'cn'}" onclick="goEntry('${name}',${mi})">${v!==null?v:'—'}</td>`;
+    }).join('');
+    return `<tr><td class="stk" style="left:0;font-size:10px;color:#333;padding-left:8px;min-width:22px">${i+1}</td>
+    <td class="stk" style="left:22px;min-width:95px;font-size:12px;text-align:left;padding-left:6px">${name}</td>
+    ${cells}<td style="color:var(--zc);font-family:'Syne',sans-serif;font-weight:700">${rt.toLocaleString('id-ID')}</td></tr>`;
+  }).join('');
+  const ftCells=MONTHS.map((_,mi)=>{
+    const t=members().reduce((s,m)=>s+(getPay(activeZone,m,selYear,mi)||0),0);
+    return `<td style="color:#5bcea6;font-weight:700">${t.toLocaleString('id-ID')}</td>`;
+  }).join('');
+  return `<div style="display:flex;gap:7px;margin-bottom:10px;align-items:center">
+    <select class="cs" style="flex:none;width:auto" onchange="selYear=+this.value;render()">${yrOpts}</select>
+    <input class="search-box" style="margin:0;flex:1" placeholder="🔍 cari..." value="${search}" oninput="search=this.value;render()"/>
+  </div>
+  <div class="sum-bar" style="margin-bottom:10px">
+    <div class="sum-lbl">${activeZone} ${selYear}</div>
+    <div class="sum-val">Rp ${grand.toLocaleString('id-ID')}</div>
+  </div>
+  <div class="rekap-wrap">
+  <table class="rtable">
+    <thead><tr>
+      <th class="stk" style="left:0;min-width:22px">#</th>
+      <th class="stk" style="left:22px;text-align:left;min-width:95px">NAMA</th>
+      ${MONTHS.map(m=>`<th style="min-width:38px">${m}</th>`).join('')}
+      <th style="color:var(--zc);min-width:52px">TOTAL</th>
+    </tr></thead>
+    <tbody>${rows}</tbody>
+    <tfoot><tr style="background:#111318;border-top:2px solid #1e2231">
+      <td colspan="2" class="stk" style="left:0;font-size:10px;color:#444;padding-left:8px;background:#111318">TOTAL</td>
+      ${ftCells}
+      <td style="color:var(--zc);font-family:'Syne',sans-serif;font-weight:800">${grand.toLocaleString('id-ID')}</td>
+    </tr></tfoot>
+  </table></div>`;
+}
+
+// ══════════════════════════════════════════
+// TUNGGAKAN VIEW
+// ══════════════════════════════════════════
+function renderTunggakan(){
+  const yrOpts=YEARS.map(y=>`<option value="${y}"${y===selYear?' selected':''}>${y}</option>`).join('');
+  const moOpts=MONTHS.map((m,i)=>`<option value="${i}"${i===selMonth?' selected':''}>${m}</option>`).join('');
+  const mems=members();
+  // Find unpaid for selected month
+  const tunggak=mems.filter(m=>getPay(activeZone,m,selYear,selMonth)===null);
+  // Multi-month arrears: find members with consecutive unpaid
+  const arrears=mems.map(name=>{
+    const months=[];
+    for(let mi=0;mi<=selMonth;mi++){
+      if(getPay(activeZone,name,selYear,mi)===null) months.push(mi);
+    }
+    // previous years
+    YEARS.filter(y=>y<selYear).forEach(y=>{
+      for(let mi=0;mi<12;mi++){
+        if(getPay(activeZone,name,y,mi)===null) months.push(`${MONTHS[mi]} ${y}`);
+      }
+    });
+    return {name,months};
+  }).filter(x=>x.months.length>0);
+
+  const cards=tunggak.length===0?`<div style="text-align:center;padding:30px;color:#555;font-size:13px">✅ Semua sudah bayar bulan ini!</div>`:
+    tunggak.map((name,i)=>{
+      const arr=arrears.find(a=>a.name===name);
+      const mList=arr?arr.months.map(m=>typeof m==='number'?`<span class="tmonth">${MONTHS[m]}</span>`:`<span class="tmonth">${m}</span>`).join(''):'';
+      return `<div class="tcard">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
+          <span class="tcard-name">${i+1}. ${name}</span>
+          <span style="font-size:10px;color:#e05c5c">${arr?arr.months.length:0} bulan nunggak</span>
+        </div>
+        <div class="tcard-months">${mList}</div>
+      </div>`;
+    }).join('');
+
+  return `<div class="ctrl-row">
+    <select class="cs" onchange="selMonth=+this.value;render()">${moOpts}</select>
+    <select class="cs" onchange="selYear=+this.value;render()">${yrOpts}</select>
+  </div>
+  <div class="sum-bar">
+    <div><div class="sum-lbl">TUNGGAKAN ${MONTHS[selMonth].toUpperCase()} ${selYear} · ${activeZone}</div>
+    <div class="sum-val" style="color:#e05c5c">${tunggak.length} pelanggan</div></div>
+  </div>
+  ${cards}`;
+}
+
+// ══════════════════════════════════════════
+// GRAFIK VIEW
+// ══════════════════════════════════════════
+function renderGrafik(){
+  const yrOpts=YEARS.map(y=>`<option value="${y}"${y===selYear?' selected':''}>${y}</option>`).join('');
+  return `<div class="ctrl-row">
+    <select class="cs" onchange="selYear=+this.value;render()">${yrOpts}</select>
+  </div>
+  <div class="chart-box">
+    <div class="chart-title">PENDAPATAN BULANAN ${selYear} · ${activeZone}</div>
+    <div class="chart-wrap"><canvas id="chart-monthly"></canvas></div>
+  </div>
+  <div class="chart-box">
+    <div class="chart-title">PERBANDINGAN TAHUNAN · ${activeZone}</div>
+    <div class="chart-wrap"><canvas id="chart-yearly"></canvas></div>
+  </div>
+  <div class="chart-box">
+    <div class="chart-title">KRS vs SLK ${selYear}</div>
+    <div class="chart-wrap"><canvas id="chart-compare"></canvas></div>
+  </div>`;
+}
+
+function initCharts(){
+  const zc=activeZone==='KRS'?'#3a7bd5':'#e05c3a';
+  const cfg={responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:{callbacks:{label:ctx=>`Rp ${ctx.raw.toLocaleString('id-ID')}`}}},scales:{x:{grid:{color:'#1e2231'},ticks:{color:'#555',font:{family:'DM Mono',size:10}}},y:{grid:{color:'#1e2231'},ticks:{color:'#555',font:{family:'DM Mono',size:10},callback:v=>'Rp '+v.toLocaleString('id-ID')}}}};
+
+  // Monthly
+  const mData=MONTHS.map((_,mi)=>members().reduce((s,m)=>s+(getPay(activeZone,m,selYear,mi)||0),0));
+  const cm=document.getElementById('chart-monthly');
+  if(cm){chartInstances.monthly=new Chart(cm,{type:'bar',data:{labels:MONTHS,datasets:[{data:mData,backgroundColor:zc+'99',borderColor:zc,borderWidth:2,borderRadius:4}]},options:{...cfg}});}
+
+  // Yearly
+  const yData=YEARS.map(y=>MONTHS.reduce((s,_,mi)=>s+members().reduce((ss,m)=>ss+(getPay(activeZone,m,y,mi)||0),0),0));
+  const cy=document.getElementById('chart-yearly');
+  if(cy){chartInstances.yearly=new Chart(cy,{type:'line',data:{labels:YEARS.map(String),datasets:[{data:yData,borderColor:zc,backgroundColor:zc+'22',borderWidth:2,tension:0.4,fill:true,pointBackgroundColor:zc,pointRadius:4}]},options:{...cfg}});}
+
+  // Compare KRS vs SLK
+  const kData=MONTHS.map((_,mi)=>appData.krsMembers.reduce((s,m)=>s+(appData.payments?.[getKey('KRS',m,selYear,mi)]||0),0));
+  const sData=MONTHS.map((_,mi)=>appData.slkMembers.reduce((s,m)=>s+(appData.payments?.[getKey('SLK',m,selYear,mi)]||0),0));
+  const cc=document.getElementById('chart-compare');
+  if(cc){chartInstances.compare=new Chart(cc,{type:'line',data:{labels:MONTHS,datasets:[{label:'KRS',data:kData,borderColor:'#3a7bd5',backgroundColor:'#3a7bd522',borderWidth:2,tension:0.4,fill:false,pointBackgroundColor:'#3a7bd5',pointRadius:3},{label:'SLK',data:sData,borderColor:'#e05c3a',backgroundColor:'#e05c3a22',borderWidth:2,tension:0.4,fill:false,pointBackgroundColor:'#e05c3a',pointRadius:3}]},options:{...cfg,plugins:{...cfg.plugins,legend:{display:true,labels:{color:'#888',font:{family:'DM Mono',size:10},boxWidth:12}}}}});}
+}
+
+// ══════════════════════════════════════════
+// LOG VIEW
+// ══════════════════════════════════════════
+function renderLog(){
+  const logs=appData.activityLog||[];
+  if(!logs.length) return `<div style="text-align:center;padding:30px;color:#555;font-size:13px">📋 Belum ada riwayat</div>`;
+  return `<div style="font-size:10px;color:#555;margin-bottom:10px;letter-spacing:.06em">${logs.length} AKTIVITAS TERAKHIR</div>`+
+  logs.slice(0,100).map(l=>{
+    const d=new Date(l.ts);
+    const dt=`${d.toLocaleDateString('id-ID')} ${d.toLocaleTimeString('id-ID',{hour:'2-digit',minute:'2-digit'})}`;
+    return `<div class="log-item">
+      <div class="log-time">${dt} · ${l.user||'—'}</div>
+      <div class="log-action">${l.action}</div>
+      ${l.detail?`<div class="log-detail">${l.detail}</div>`:''}
+    </div>`;
+  }).join('');
+}
+
+// ══════════════════════════════════════════
+// MEMBERS VIEW
+// ══════════════════════════════════════════
+function renderMembers(){
+  const renderList=(zone,mems)=>{
+    const c=zone==='KRS'?'#3a7bd5':'#e05c3a';
+    const filtered=mems.filter(m=>m.toLowerCase().includes(search.toLowerCase()));
+    const rows=filtered.map((name,i)=>{
+      const info=appData.memberInfo?.[zone+'__'+name]||{};
+      return `<div class="mem-row">
+        <span class="mem-num">${i+1}.</span>
+        ${info.id?`<span class="mem-id-badge">${info.id}</span>`:'<span class="mem-id-badge" style="color:#333;border-color:#1e2231">—</span>'}
+        <span class="mem-name-txt">${name}</span>
+        ${info.ip?`<span class="mem-ip-txt">${info.ip}</span>`:''}
+        <button class="delbtn" onclick="deleteMember('${zone}','${name}')">✕</button>
+      </div>`;
+    }).join('');
+    return `<div class="mem-section">
+      <div class="ms-hdr">
+        <span class="ms-title" style="color:${c}">${zone}</span>
+        <span style="font-size:10px;color:#444">${filtered.length} member</span>
+      </div>${rows}</div>`;
+  };
+  return `<div class="add-form">
+    <div class="af-title">TAMBAH MEMBER BARU</div>
+    <div class="af-grid">
+      <div><div style="font-size:10px;color:#555;margin-bottom:4px">NAMA</div>
+        <input class="af-input" id="af-name" placeholder="Nama member" onkeydown="if(event.key==='Enter')addMember()"/></div>
+      <div><div style="font-size:10px;color:#555;margin-bottom:4px">ID PELANGGAN</div>
+        <input class="af-input" id="af-id" placeholder="Opsional"/></div>
+      <div><div style="font-size:10px;color:#555;margin-bottom:4px">IP / LINK ROUTER</div>
+        <input class="af-input" id="af-ip" placeholder="192.168.x.x atau http://..."/></div>
+      <div><div style="font-size:10px;color:#555;margin-bottom:4px">ZONA</div>
+        <div style="display:flex;gap:5px;background:#131620;padding:3px;border-radius:20px;border:1px solid #1e2231">
+          <button style="flex:1;padding:6px;border-radius:16px;border:none;cursor:pointer;font-size:11px;transition:all .2s;background:${newMemberZone==='KRS'?'#3a7bd5':'transparent'};color:${newMemberZone==='KRS'?'#fff':'#555'}" onclick="newMemberZone='KRS';render()">KRS</button>
+          <button style="flex:1;padding:6px;border-radius:16px;border:none;cursor:pointer;font-size:11px;transition:all .2s;background:${newMemberZone==='SLK'?'#e05c3a':'transparent'};color:${newMemberZone==='SLK'?'#fff':'#555'}" onclick="newMemberZone='SLK';render()">SLK</button>
+        </div>
+      </div>
+    </div>
+    <button style="width:100%;background:var(--zc);color:#fff;border:none;padding:10px;border-radius:8px;font-size:13px;font-weight:600;cursor:pointer" onclick="addMember()">+ Tambah Member</button>
+  </div>
+  <input class="search-box" placeholder="🔍 Cari nama..." value="${search}" oninput="search=this.value;render()"/>
+  ${renderList('KRS',appData.krsMembers)}
+  ${renderList('SLK',appData.slkMembers)}`;
+}
+
+// ══════════════════════════════════════════
+// EVENTS & ACTIONS
+// ══════════════════════════════════════════
+function attachEvents(){
+  document.querySelectorAll('.mc-input').forEach(inp=>{
+    inp.addEventListener('change',e=>{
+      const name=e.target.dataset.name;
+      const val=e.target.value;
+      const old=getPay(activeZone,name,selYear,selMonth);
+      if(!appData.payments) appData.payments={};
+      const k=getKey(activeZone,name,selYear,selMonth);
+      if(val===''||val===null) delete appData.payments[k];
+      else appData.payments[k]=Number(val);
+      saveDB({action:`💰 Bayar ${activeZone} - ${name}`,detail:`${MONTHS[selMonth]} ${selYear}: ${old??'—'} → Rp ${Number(val).toLocaleString('id-ID')}`});
+      showToast(`${name} → Rp ${Number(val).toLocaleString('id-ID')}`);
+      expandedCard=name; render();
+    });
+  });
+}
+
+function saveInfoField(el){
+  const name=el.dataset.name;
+  const field=el.dataset.field;
+  const val=el.value;
+  const k=activeZone+'__'+name;
+  if(!appData.memberInfo) appData.memberInfo={};
+  if(!appData.memberInfo[k]) appData.memberInfo[k]={};
+  appData.memberInfo[k][field]=val;
+  saveDB({action:`📅 Update ${activeZone} - ${name}`,detail:`${field}: ${val}`});
+  showToast(`Tanggal bayar disimpan`);
+}
+
+function toggleCard(name){
+  expandedCard=expandedCard===name?null:name;
+  render();
+  if(expandedCard){
+    setTimeout(()=>{
+      const el=document.getElementById('card-'+name.replace(/\s/g,'_'));
+      if(el) el.scrollIntoView({behavior:'smooth',block:'nearest'});
+      const inp=document.getElementById('inp-'+name.replace(/\s/g,'_'));
+      if(inp) inp.focus();
+    },50);
+  }
+}
+
+function quickPay(name,amt){
+  if(!appData.payments) appData.payments={};
+  const old=getPay(activeZone,name,selYear,selMonth);
+  appData.payments[getKey(activeZone,name,selYear,selMonth)]=amt;
+  saveDB({action:`💰 Quick Pay ${activeZone} - ${name}`,detail:`${MONTHS[selMonth]} ${selYear}: ${old??'—'} → Rp ${amt.toLocaleString('id-ID')}`});
+  showToast(`${name} → Rp ${amt.toLocaleString('id-ID')}`);
+  expandedCard=null; render();
+}
+
+function clearPay(name){
+  const k=getKey(activeZone,name,selYear,selMonth);
+  const old=getPay(activeZone,name,selYear,selMonth);
+  delete appData.payments[k];
+  saveDB({action:`🗑️ Hapus bayar ${activeZone} - ${name}`,detail:`${MONTHS[selMonth]} ${selYear}: Rp ${(old||0).toLocaleString('id-ID')} → dihapus`});
+  showToast(`${name} dihapus`,'err');
+  render();
+}
+
+function goEntry(name,month){selMonth=month;expandedCard=name;setView('entry');search=name;render();}
+
+function addMember(){
+  const name=(document.getElementById('af-name')?.value||'').trim().toUpperCase();
+  const id=(document.getElementById('af-id')?.value||'').trim();
+  const ip=(document.getElementById('af-ip')?.value||'').trim();
+  if(!name){showToast('Nama tidak boleh kosong','err');return;}
+  const list=newMemberZone==='KRS'?appData.krsMembers:appData.slkMembers;
+  if(list.includes(name)){showToast(`${name} sudah ada!`,'err');return;}
+  list.push(name);list.sort();
+  const k=newMemberZone+'__'+name;
+  if(!appData.memberInfo) appData.memberInfo={};
+  if(id||ip) appData.memberInfo[k]={id,ip};
+  saveDB({action:`➕ Tambah member ${newMemberZone} - ${name}`,detail:id?`ID: ${id}${ip?', IP: '+ip:''}`:''});
+  showToast(`${name} ditambahkan ke ${newMemberZone}!`);
+  render();
+}
+
+function deleteMember(zone,name){
+  if(!confirm(`Hapus ${name} dari ${zone}?`))return;
+  if(zone==='KRS') appData.krsMembers=appData.krsMembers.filter(m=>m!==name);
+  else appData.slkMembers=appData.slkMembers.filter(m=>m!==name);
+  saveDB({action:`🗑️ Hapus member ${zone} - ${name}`});
+  showToast(`${name} dihapus`,'err');
+  render();
+}
+
+// ══════════════════════════════════════════
+// SHARE MODAL
+// ══════════════════════════════════════════
+function showShareModal(){
+  const sm=document.getElementById('share-month');
+  const sy=document.getElementById('share-year');
+  sm.innerHTML=MONTHS.map((m,i)=>`<option value="${i}"${i===selMonth?' selected':''}>${m}</option>`).join('');
+  sy.innerHTML=YEARS.map(y=>`<option value="${y}"${y===selYear?' selected':''}>${y}</option>`).join('');
+  document.getElementById('share-zone').value=activeZone;
+  document.getElementById('share-modal').style.display='flex';
+}
+function setShareType(t){
+  shareType=t;
+  document.getElementById('share-type-monthly').className='fmt-btn'+(t==='monthly'?' on':'');
+  document.getElementById('share-type-yearly').className='fmt-btn'+(t==='yearly'?' on':'');
+  document.getElementById('share-month-row').style.display=t==='monthly'?'':'none';
+}
+function setFmt(f){
+  shareFmt=f;
+  document.getElementById('fmt-pdf').className='fmt-btn'+(f==='pdf'?' on':'');
+  document.getElementById('fmt-excel').className='fmt-btn'+(f==='excel'?' on':'');
+}
+
+async function doShare(){
+  const zone=document.getElementById('share-zone').value;
+  const year=+document.getElementById('share-year').value;
+  const month=+document.getElementById('share-month').value;
+  closeModal('share-modal');
+  showToast('Membuat file...','info');
+  try{
+    let blob,filename;
+    if(shareFmt==='pdf'){
+      const result=await generatePDF(zone,year,shareType==='monthly'?month:null);
+      blob=result.blob; filename=result.filename;
+    } else {
+      const result=generateExcel(zone,year,shareType==='monthly'?month:null);
+      blob=result.blob; filename=result.filename;
+    }
+    const url=URL.createObjectURL(blob);
+    const a=document.createElement('a');a.href=url;a.download=filename;a.click();
+    setTimeout(()=>{
+      const txt=encodeURIComponent(`Rekap WiFi Pay ${zone} ${shareType==='monthly'?MONTHS[month]+' ':''} ${year}\nFile: ${filename}`);
+      window.open(`https://wa.me/?text=${txt}`,'_blank');
+    },1000);
+    showToast('File siap, WhatsApp dibuka!');
+    saveDB({action:`📤 Share rekap ${zone} ${shareType==='monthly'?MONTHS[month]+' ':''}${year} (${shareFmt.toUpperCase()})`});
+  }catch(e){showToast('Gagal generate file','err');console.error(e);}
+}
+
+async function generatePDF(zone,year,month){
+  const {jsPDF}=window.jspdf;
+  const doc=new jsPDF({orientation:'landscape',unit:'mm',format:'a4'});
+  const mems=zone==='ALL'?[...appData.krsMembers.map(n=>({n,z:'KRS'})),...appData.slkMembers.map(n=>({n,z:'SLK'}))]
+    :(zone==='KRS'?appData.krsMembers:appData.slkMembers).map(n=>({n,z:zone}));
+  const title=month!==null?`Rekap WiFi Pay ${zone} - ${MONTHS[month]} ${year}`:`Rekap WiFi Pay ${zone} - ${year}`;
+  doc.setFontSize(14);doc.setFont('helvetica','bold');doc.text(title,14,16);
+  doc.setFontSize(9);doc.setFont('helvetica','normal');doc.setTextColor(150);
+  doc.text(`Dibuat: ${new Date().toLocaleString('id-ID')}`,14,22);doc.setTextColor(0);
+  let head,body,foot;
+  if(month!==null){
+    head=[['#','Nama','Zona','Tgl Bayar','Jumlah','Status']];
+    body=mems.map(({n,z},i)=>{
+      const v=getPay(z,n,year,month);
+      const info=appData.memberInfo?.[z+'__'+n]||{};
+      const dt=info['date_'+year+'_'+month]||'—';
+      return [i+1,n,z,dt,v!==null?'Rp '+v.toLocaleString('id-ID'):'—',v>0?'Lunas':'Belum'];
+    });
+    const total=mems.reduce((s,{n,z})=>s+(getPay(z,n,year,month)||0),0);
+    foot=[['','','','TOTAL','Rp '+total.toLocaleString('id-ID'),'']]; 
+  } else {
+    head=[['#','Nama',...MONTHS,'Total']];
+    body=mems.map(({n,z},i)=>{
+      let t=0;
+      const cols=MONTHS.map((_,mi)=>{const v=getPay(z,n,year,mi);t+=v||0;return v!==null?v:'—';});
+      return [i+1,n,...cols,t.toLocaleString('id-ID')];
+    });
+    const totals=MONTHS.map((_,mi)=>mems.reduce((s,{n,z})=>s+(getPay(z,n,year,mi)||0),0));
+    foot=[['','TOTAL',...totals.map(t=>t.toLocaleString('id-ID')),totals.reduce((a,b)=>a+b,0).toLocaleString('id-ID')]];
+  }
+  doc.autoTable({head,body,foot,startY:26,styles:{fontSize:8,cellPadding:2},headStyles:{fillColor:[30,34,49],textColor:[170,170,160]},footStyles:{fillColor:[20,24,36],textColor:[90,200,160],fontStyle:'bold'},alternateRowStyles:{fillColor:[15,18,28]},margin:{left:14,right:14}});
+  const blob=doc.output('blob');
+  const filename=`wifi-pay-${zone}-${month!==null?MONTHS[month]+'-':''}${year}.pdf`;
+  return {blob,filename};
+}
+
+function generateExcel(zone,year,month){
+  const mems=zone==='ALL'?[...appData.krsMembers.map(n=>({n,z:'KRS'})),...appData.slkMembers.map(n=>({n,z:'SLK'}))]
+    :(zone==='KRS'?appData.krsMembers:appData.slkMembers).map(n=>({n,z:zone}));
+  const wb=XLSX.utils.book_new();
+  let ws;
+  if(month!==null){
+    const rows=[['#','Nama','Zona','Tgl Bayar','Jumlah','Status']];
+    mems.forEach(({n,z},i)=>{
+      const v=getPay(z,n,year,month);
+      const info=appData.memberInfo?.[z+'__'+n]||{};
+      rows.push([i+1,n,z,info['date_'+year+'_'+month]||'',v!==null?v:0,v>0?'Lunas':'Belum']);
+    });
+    const total=mems.reduce((s,{n,z})=>s+(getPay(z,n,year,month)||0),0);
+    rows.push(['','','','TOTAL',total,'']);
+    ws=XLSX.utils.aoa_to_sheet(rows);
+  } else {
+    const rows=[['#','Nama','Zona',...MONTHS,'Total']];
+    mems.forEach(({n,z},i)=>{
+      let t=0;const cols=MONTHS.map((_,mi)=>{const v=getPay(z,n,year,mi);t+=v||0;return v||0;});
+      rows.push([i+1,n,z,...cols,t]);
+    });
+    const totals=MONTHS.map((_,mi)=>mems.reduce((s,{n,z})=>s+(getPay(z,n,year,mi)||0),0));
+    rows.push(['','TOTAL','',...totals,totals.reduce((a,b)=>a+b,0)]);
+    ws=XLSX.utils.aoa_to_sheet(rows);
+  }
+  const sheetName=month!==null?`${MONTHS[month]} ${year}`:`Tahun ${year}`;
+  XLSX.utils.book_append_sheet(wb,ws,sheetName);
+  const blob=new Blob([XLSX.write(wb,{bookType:'xlsx',type:'array'})],{type:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'});
+  const filename=`wifi-pay-${zone}-${month!==null?MONTHS[month]+'-':''}${year}.xlsx`;
+  return {blob,filename};
+}
+
+// ══════════════════════════════════════════
+// EXPORT / IMPORT
+// ══════════════════════════════════════════
+function showExportModal(){
+  const ey=document.getElementById('exp-year');
+  if(ey) ey.innerHTML=YEARS.map(y=>`<option value="${y}"${y===selYear?' selected':''}>${y}</option>`).join('');
+  document.getElementById('export-modal').style.display='flex';
+}
+function setExpFmt(f){
+  expFmt=f;
+  document.getElementById('exp-fmt-json').className='fmt-btn'+(f==='json'?' on':'');
+  document.getElementById('exp-fmt-csv').className='fmt-btn'+(f==='csv'?' on':'');
+  document.getElementById('exp-csv-opts').style.display=f==='csv'?'':'none';
+}
+function doExport(){
+  closeModal('export-modal');
+  if(expFmt==='json'){
+    const blob=new Blob([JSON.stringify({...appData,exportedAt:new Date().toISOString()},null,2)],{type:'application/json'});
+    const a=document.createElement('a');a.href=URL.createObjectURL(blob);
+    a.download=`wifi-pay-backup-${new Date().toISOString().slice(0,10)}.json`;a.click();
+    showToast('Backup JSON berhasil!');
+  } else {
+    const zone=document.getElementById('exp-zone').value;
+    const year=+document.getElementById('exp-year').value;
+    const {blob,filename}=generateExcel(zone,year,null);
+    const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=filename;a.click();
+    showToast(`CSV ${zone} ${year} berhasil!`);
+  }
+}
+function importData(e){
+  const file=e.target.files[0];if(!file)return;
+  const reader=new FileReader();
+  reader.onload=ev=>{
+    try{
+      const data=JSON.parse(ev.target.result);
+      if(data.krsMembers) appData.krsMembers=data.krsMembers;
+      if(data.slkMembers) appData.slkMembers=data.slkMembers;
+      if(data.payments) appData.payments=data.payments;
+      if(data.memberInfo) appData.memberInfo=data.memberInfo;
+      saveDB({action:'⬆️ Import data dari file JSON'});
+      render();showToast('Data berhasil di-import!');
+    }catch{showToast('File tidak valid!','err');}
+  };
+  reader.readAsText(file);e.target.value='';
+}
+
+// ══════════════════════════════════════════
+// PWA
+// ══════════════════════════════════════════
+window.addEventListener('beforeinstallprompt',e=>{e.preventDefault();deferredPrompt=e;if(currentView==='entry')render();});
+function installPWA(){if(!deferredPrompt)return;deferredPrompt.prompt();deferredPrompt.userChoice.then(()=>{deferredPrompt=null;render();});}
+if('serviceWorker' in navigator) window.addEventListener('load',()=>navigator.serviceWorker.register('sw.js').catch(()=>{}));
+
+// Init zone color
+setZoneColor('KRS');
+</script>
+</body>
+</html>
