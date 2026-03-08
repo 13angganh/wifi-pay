@@ -2,6 +2,8 @@
 <html lang="id">
 <head>
 <meta charset="UTF-8"/>
+<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate"/>
+<meta http-equiv="Pragma" content="no-cache"/>
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no"/>
 <title>WiFi Pay</title>
 <meta name="theme-color" content="#0a0c12"/>
@@ -142,7 +144,7 @@ img{pointer-events:none}
 .rtable td.stk{position:sticky;background:#0e1018;z-index:2;text-align:left}
 .rtable tr:hover td{background:#111318}
 .rtable tr:hover td.stk{background:#111318}
-.cv{color:#5bcea6}.cz{color:#555}.cn{color:#1e2231;font-style:italic}
+.cv{background:#0a2010;color:#5bcea6}.cz{background:#0a2010;color:#5bcea6}.cn{color:#1c1f2a}
 
 /* ── TUNGGAKAN ── */
 .tcard{background:#0e1018;border:1px solid #e05c5c33;border-radius:9px;padding:12px;margin-bottom:6px}
@@ -590,8 +592,32 @@ function showLoginScreen(){
   if(dbRef){try{dbRef.off();}catch(e){} dbRef=null;}
   const savedEmail=localStorage.getItem('wp_remember_email');
   const savedName=localStorage.getItem('wp_remember_name');
+  const savedCred=localStorage.getItem('wp_cred');
+  // Jika ada saved credentials -> auto re-login diam-diam
+  if(savedCred){
+    const decoded=dec(savedCred);
+    const parts=decoded.split('::');
+    if(parts.length>=2){
+      const email=parts[0];
+      const pass=parts.slice(1).join('::');
+      // Coba auto login tanpa tampilkan layar apapun
+      auth.setPersistence(firebase.auth.Auth.Persistence.LOCAL)
+        .then(()=>auth.signInWithEmailAndPassword(email,pass))
+        .then(cred=>{
+          // Berhasil - onAuthStateChanged akan handle showAppScreen
+        })
+        .catch(()=>{
+          // Gagal - tampilkan layar remembered
+          _showLoginUI(savedEmail,savedName);
+        });
+      return; // Jangan tampilkan apapun dulu
+    }
+  }
+  _showLoginUI(savedEmail,savedName);
+}
+
+function _showLoginUI(savedEmail,savedName){
   if(savedEmail){
-    // Show remembered state
     document.getElementById('login-remembered').style.display='';
     document.getElementById('login-form').style.display='none';
     document.getElementById('register-form').style.display='none';
@@ -671,11 +697,38 @@ function setSyncStatus(s){
 // Auth state
 auth.onAuthStateChanged(user=>{
   if(user){
-    // User is logged in via Firebase persistence -> go straight to app
     showAppScreen(user);
   } else {
-    // Not logged in -> show login screen (remembered or fresh)
     showLoginScreen();
+  }
+});
+
+// Re-check auth saat app kembali dari background
+document.addEventListener('visibilitychange',()=>{
+  if(document.visibilityState==='visible'){
+    const user=auth.currentUser;
+    const appEl=document.getElementById('screen-app');
+    const loginEl=document.getElementById('screen-login');
+    const appVisible=appEl&&appEl.classList.contains('visible');
+    const loginHidden=loginEl&&loginEl.classList.contains('hidden');
+    if(!user&&appVisible){
+      showLoginScreen(); // Session habis, tampil login
+    } else if(user&&!loginHidden){
+      showAppScreen(user); // Masih login tapi layar login tampil
+    }
+  }
+});
+
+// Handle PWA pageshow dari beranda (bfcache)
+window.addEventListener('pageshow',e=>{
+  if(e.persisted){
+    setTimeout(()=>{
+      const user=auth.currentUser;
+      const appEl=document.getElementById('screen-app');
+      const loginEl=document.getElementById('screen-login');
+      if(!user&&appEl&&appEl.classList.contains('visible')) showLoginScreen();
+      else if(user&&loginEl&&!loginEl.classList.contains('hidden')) showAppScreen(user);
+    },300);
   }
 });
 
@@ -715,7 +768,10 @@ function switchZone(z){
   setZoneColor(z);
   document.querySelectorAll('.zbtn').forEach(b=>{
     b.className='zbtn';
-    if(b.textContent===z) b.classList.add(z==='KRS'?'krs':'slk');
+    if(b.textContent===z){
+      if(z==='KRS') b.classList.add('krs');
+      else if(z==='SLK') b.classList.add('slk');
+    }
   });
   render();
 }
@@ -814,6 +870,7 @@ function renderEntry(){
 // REKAP VIEW
 // ══════════════════════════════════════════
 function renderRekap(){
+  if(activeZone==='TOTAL') activeZone='KRS';
   const mems=members().filter(m=>m.toLowerCase().includes(search.toLowerCase()));
   const yrOpts=YEARS.map(y=>`<option value="${y}"${y===selYear?' selected':''}>${y}</option>`).join('');
   const grand=MONTHS.reduce((s,_,mi)=>s+members().reduce((ss,m)=>ss+(getPay(activeZone,m,selYear,mi)||0),0),0);
@@ -851,7 +908,7 @@ function renderRekap(){
     <tfoot><tr style="background:#111318;border-top:2px solid #1e2231">
       <td colspan="2" class="stk" style="left:0;font-size:10px;color:#444;padding-left:8px;background:#111318">TOTAL</td>
       ${ftCells}
-      <td style="color:var(--zc);font-family:'Syne',sans-serif;font-weight:800">${grand.toLocaleString('id-ID')}</td>
+      <td style="color:var(--zc);font-family:'Syne',sans-serif;font-weight:800">${rp(grand)}</td>
     </tr></tfoot>
   </table></div>`;
 }
@@ -859,49 +916,86 @@ function renderRekap(){
 // ══════════════════════════════════════════
 // TUNGGAKAN VIEW
 // ══════════════════════════════════════════
+function getArrears(zone, name, upToYear, upToMonth){
+  // Hitung semua bulan yang belum dibayar sampai upToYear/upToMonth
+  // Terus berjalan sampai ada pembayaran (tidak kosong)
+  const unpaid=[];
+  let totalNominal=0;
+  // Cek semua bulan dari tahun pertama sampai bulan yang dipilih
+  for(let y of YEARS){
+    if(y>upToYear) break;
+    const maxM=(y===upToYear)?upToMonth:11;
+    for(let mi=0;mi<=maxM;mi++){
+      const v=getPay(zone,name,y,mi);
+      if(v===null){
+        unpaid.push({label:`${MONTHS[mi]} ${y}`,y,mi});
+      }
+    }
+  }
+  return unpaid;
+}
+
 function renderTunggakan(){
+  if(activeZone==='TOTAL') activeZone='KRS';
   const yrOpts=YEARS.map(y=>`<option value="${y}"${y===selYear?' selected':''}>${y}</option>`).join('');
   const moOpts=MONTHS.map((m,i)=>`<option value="${i}"${i===selMonth?' selected':''}>${m}</option>`).join('');
   const mems=members();
-  // Find unpaid for selected month
-  const tunggak=mems.filter(m=>getPay(activeZone,m,selYear,selMonth)===null);
-  // Multi-month arrears: find members with consecutive unpaid
-  const arrears=mems.map(name=>{
-    const months=[];
-    for(let mi=0;mi<=selMonth;mi++){
-      if(getPay(activeZone,name,selYear,mi)===null) months.push(mi);
-    }
-    // previous years
-    YEARS.filter(y=>y<selYear).forEach(y=>{
-      for(let mi=0;mi<12;mi++){
-        if(getPay(activeZone,name,y,mi)===null) months.push(`${MONTHS[mi]} ${y}`);
-      }
-    });
-    return {name,months};
-  }).filter(x=>x.months.length>0);
 
-  const cards=tunggak.length===0?`<div style="text-align:center;padding:30px;color:#555;font-size:13px">✅ Semua sudah bayar bulan ini!</div>`:
-    tunggak.map((name,i)=>{
-      const arr=arrears.find(a=>a.name===name);
-      const mList=arr?arr.months.map(m=>typeof m==='number'?`<span class="tmonth">${MONTHS[m]}</span>`:`<span class="tmonth">${m}</span>`).join(''):'';
+  // Semua member dengan tunggakan sampai bulan ini
+  const allArrears=mems.map(name=>{
+    const unpaid=getArrears(activeZone,name,selYear,selMonth);
+    return {name,unpaid,count:unpaid.length};
+  }).filter(x=>x.count>0).sort((a,b)=>b.count-a.count);
+
+  // Filter: bulan ini saja belum bayar
+  const unpaidThisMonth=mems.filter(m=>getPay(activeZone,m,selYear,selMonth)===null);
+
+  // Pisah rajin vs nakal
+  const nakal=allArrears; // punya tunggakan apapun
+  const rajin=mems.filter(name=>{
+    const unpaid=getArrears(activeZone,name,selYear,selMonth);
+    return unpaid.length===0;
+  });
+
+  // Mode tampilan: 'nakal' atau 'rajin'
+  const mode=window._tunggakanMode||'nakal';
+
+  const nakalCards=nakal.length===0
+    ?`<div style="text-align:center;padding:30px;color:#5bcea6;font-size:13px">✅ Semua lunas sampai bulan ini!</div>`
+    :nakal.map((x,i)=>{
+      const badges=x.unpaid.slice(0,12).map(u=>`<span class="tmonth">${u.label}</span>`).join('');
+      const more=x.unpaid.length>12?`<span class="tmonth" style="color:#888">+${x.unpaid.length-12} lagi</span>`:'';
       return `<div class="tcard">
         <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
-          <span class="tcard-name">${i+1}. ${name}</span>
-          <span style="font-size:10px;color:#e05c5c">${arr?arr.months.length:0} bulan nunggak</span>
+          <span class="tcard-name">${i+1}. ${x.name}</span>
+          <span style="font-size:10px;color:#e05c5c;font-weight:600">${x.count} bulan nunggak</span>
         </div>
-        <div class="tcard-months">${mList}</div>
+        <div class="tcard-months">${badges}${more}</div>
       </div>`;
     }).join('');
+
+  const rajinCards=rajin.length===0
+    ?`<div style="text-align:center;padding:30px;color:#555;font-size:13px">Belum ada yang lunas sempurna</div>`
+    :rajin.map((name,i)=>`<div class="tcard" style="border-color:#5bcea633">
+        <div style="display:flex;justify-content:space-between;align-items:center">
+          <span class="tcard-name" style="color:#5bcea6">✅ ${i+1}. ${name}</span>
+          <span style="font-size:10px;color:#5bcea6">Lunas semua</span>
+        </div>
+      </div>`).join('');
 
   return `<div class="ctrl-row">
     <select class="cs" onchange="selMonth=+this.value;render()">${moOpts}</select>
     <select class="cs" onchange="selYear=+this.value;render()">${yrOpts}</select>
   </div>
-  <div class="sum-bar">
-    <div><div class="sum-lbl">TUNGGAKAN ${MONTHS[selMonth].toUpperCase()} ${selYear} · ${activeZone}</div>
-    <div class="sum-val" style="color:#e05c5c">${tunggak.length} pelanggan</div></div>
+  <div style="display:flex;gap:4px;margin-bottom:10px;background:#131620;padding:3px;border-radius:20px;border:1px solid #1e2231">
+    <button onclick="window._tunggakanMode='nakal';render()" style="flex:1;padding:7px;border-radius:16px;border:none;cursor:pointer;font-size:11px;font-weight:600;background:${mode==='nakal'?'#e05c3a':'transparent'};color:${mode==='nakal'?'#fff':'#555'}">⚠️ Nunggak / Bermasalah (${nakal.length})</button>
+    <button onclick="window._tunggakanMode='rajin';render()" style="flex:1;padding:7px;border-radius:16px;border:none;cursor:pointer;font-size:11px;font-weight:600;background:${mode==='rajin'?'#5bcea6':'transparent'};color:${mode==='rajin'?'#0a0c12':'#555'}">🌟 Rajin Bayar (${rajin.length})</button>
   </div>
-  ${cards}`;
+  <div class="sum-bar" style="margin-bottom:10px">
+    <div class="sum-lbl">${mode==='nakal'?'TUNGGAKAN S/D':'LUNAS S/D'} ${MONTHS[selMonth].toUpperCase()} ${selYear} · ${activeZone}</div>
+    <div class="sum-val" style="color:${mode==='nakal'?'#e05c5c':'#5bcea6'}">${mode==='nakal'?nakal.length:rajin.length} pelanggan</div>
+  </div>
+  ${mode==='nakal'?nakalCards:rajinCards}`;
 }
 
 // ══════════════════════════════════════════
@@ -1051,7 +1145,7 @@ function renderMembers(){
       <span class="mem-num">${i+1}.</span>
       ${idBadge}
       <span class="mem-name-txt">${name}</span>
-      ${info.ip?`<span class="mem-ip-txt">${info.ip}</span>`:''}
+      ${info.ip?`<a href="${info.ip.startsWith('http')?info.ip:'http://'+info.ip}" target="_blank" rel="noopener" style="color:#3a7bd5;font-size:11px;text-decoration:none;border:1px solid #1e3a5f;padding:2px 7px;border-radius:4px;flex-shrink:0" onclick="event.stopPropagation()">🔗 ${info.ip}</a>`:''}
       ${editBtn}${delBtn}
     </div>`;
   }).join('');
@@ -1476,7 +1570,7 @@ window.addEventListener('beforeinstallprompt',e=>{e.preventDefault();deferredPro
 
 // ══ SERVICE WORKER + AUTO UPDATE ══
 if('serviceWorker' in navigator){
-  navigator.serviceWorker.register('/wifi-pay/sw.js').then(reg=>{
+  navigator.serviceWorker.register('/wifi-pay/sw.js',{scope:'/wifi-pay/'}).then(reg=>{
     // Cek update setiap kali app dibuka
     reg.update();
     // Jika ada SW baru menunggu -> tampilkan banner
