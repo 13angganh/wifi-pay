@@ -37,20 +37,17 @@ select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/
 img{pointer-events:none}
 
 /* ── SCREENS ── */
-#screen-login,#screen-app{position:fixed;inset:0;transition:opacity .3s}
-#screen-login{background:#0a0c12;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:24px;z-index:200}
-#screen-app{display:flex;flex-direction:column;opacity:0;pointer-events:none}
-#screen-app.visible{opacity:1;pointer-events:all}
-#screen-login.hidden{opacity:0;pointer-events:none}
+#screen-login{position:fixed;inset:0;background:#0a0c12;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:24px;z-index:200}
+#screen-login.hidden{display:none}
+#screen-app{display:flex;flex-direction:column;position:fixed;inset:0;display:none}
+#screen-app.visible{display:flex}
 
 /* ── LOGIN ── */
 .login-logo{width:72px;height:72px;background:linear-gradient(135deg,#3a7bd5,#2563eb);border-radius:20px;display:flex;align-items:center;justify-content:center;font-size:32px;margin-bottom:20px;box-shadow:0 8px 32px #3a7bd533}
 .login-title{font-family:'Syne',sans-serif;font-size:26px;font-weight:800;letter-spacing:-0.03em;margin-bottom:4px}
 .login-sub{font-size:11px;color:#444;letter-spacing:.1em;margin-bottom:32px}
 .login-box{background:#0e1018;border:1px solid #1e2231;border-radius:14px;padding:24px;width:100%;max-width:360px}
-.login-remember{display:flex;align-items:center;gap:8px;margin-bottom:16px}
-.login-remember input[type=checkbox]{width:16px;height:16px;accent-color:#3a7bd5;cursor:pointer}
-.login-remember label{font-size:12px;color:#666;cursor:pointer}
+
 .lf-label{font-size:10px;color:#555;letter-spacing:.07em;margin-bottom:6px}
 .lf-input{width:100%;background:#131620;border:1px solid #1e2231;color:#ddd8cc;padding:10px 14px;border-radius:8px;font-size:14px;margin-bottom:14px;transition:border .2s}
 .lf-input:focus{border-color:#3a7bd5}
@@ -217,30 +214,36 @@ img{pointer-events:none}
   <div class="login-logo">📶</div>
   <div class="login-title">WiFi Pay</div>
   <div class="login-sub">SISTEM IURAN BULANAN</div>
-  <div class="login-box" id="login-box">
+  <div class="login-box">
+
+    <!-- STATE A: Sudah pernah login -->
     <div id="login-remembered" style="display:none">
-      <div style="text-align:center;margin-bottom:16px">
-        <div style="font-size:13px;color:#ddd8cc" id="remembered-email"></div>
-        <div style="font-size:10px;color:#555;margin-top:3px">akun tersimpan</div>
+      <div style="text-align:center;margin-bottom:20px">
+        <div style="width:52px;height:52px;background:linear-gradient(135deg,#3a7bd5,#2563eb);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:22px;margin:0 auto 12px">👤</div>
+        <div style="font-size:11px;color:#555;letter-spacing:.06em;margin-bottom:4px">SELAMAT DATANG KEMBALI</div>
+        <div style="font-size:14px;color:#ddd8cc;font-weight:500" id="remembered-name"></div>
+        <div style="font-size:11px;color:#444;margin-top:2px" id="remembered-email"></div>
       </div>
-      <button class="lf-btn" onclick="loginRemembered()">🚀 Lanjutkan</button>
+      <button class="lf-btn" id="btn-lanjut" onclick="loginRemembered()">🚀 Lanjutkan</button>
+      <div style="text-align:center;margin:12px 0;font-size:11px;color:#444">atau</div>
       <button class="lf-btn secondary" onclick="showSwitchAccount()">↔ Ganti Akun</button>
+      <div class="lf-err" id="lr-err"></div>
     </div>
-    <div id="login-form">
+
+    <!-- STATE B: Form login -->
+    <div id="login-form" style="display:none">
       <div class="lf-label">EMAIL</div>
       <input class="lf-input" id="lf-email" type="email" inputmode="email" placeholder="email@gmail.com"/>
       <div class="lf-label">PASSWORD</div>
-      <input class="lf-input" id="lf-pass" type="password" placeholder="••••••••"
-        onkeydown="if(event.key==='Enter')doLogin()"/>
-      <div class="login-remember">
-        <input type="checkbox" id="cb-remember" checked/>
-        <label for="cb-remember">Ingat akun ini</label>
-      </div>
+      <input class="lf-input" id="lf-pass" type="password" placeholder="••••••••" onkeydown="if(event.key==='Enter')doLogin()"/>
+      <!-- Always remember - no checkbox needed -->
       <div class="lf-err" id="lf-err"></div>
       <button class="lf-btn" id="lf-submit" onclick="doLogin()">Masuk</button>
       <div class="lf-divider"><span>atau</span></div>
       <div class="lf-switch">Belum punya akun? <span onclick="showRegister()">Daftar di sini</span></div>
     </div>
+
+    <!-- STATE C: Form register -->
     <div id="register-form" style="display:none">
       <div class="lf-label">EMAIL</div>
       <input class="lf-input" id="rf-email" type="email" inputmode="email" placeholder="email@gmail.com"/>
@@ -253,9 +256,9 @@ img{pointer-events:none}
       <div class="lf-divider"><span>atau</span></div>
       <div class="lf-switch">Sudah punya akun? <span onclick="showLogin()">Masuk di sini</span></div>
     </div>
+
   </div>
 </div>
-
 <!-- ══ APP SCREEN ══ -->
 <div id="screen-app">
   <div id="header">
@@ -412,6 +415,8 @@ const db = firebase.database();
 const MONTHS=["Jan","Feb","Mar","Apr","Mei","Jun","Jul","Agt","Sep","Okt","Nov","Des"];
 const YEARS=[2023,2024,2025,2026,2027,2028];
 const QUICK=[50,80,90,100,150,200];
+function enc(s){try{return btoa(unescape(encodeURIComponent(s)));}catch(e){return '';}}
+function dec(s){try{return decodeURIComponent(escape(atob(s)));}catch(e){return '';}}
 function rp(v){return 'Rp '+(v*1000).toLocaleString('id-ID');}
 function rpShort(v){return v!==null&&v!==undefined?(v*1000).toLocaleString('id-ID'):'—';}
 const DEFAULT_KRS=["ABIL","ADIT","AJI","AKBAR","ALFIN","ANA","ARPAN","AYU NANDA","B.IKE","B.NINGSIH","B.WULAN","BAGAS","BERI","CECEK","DAYAT","DIKA JON","DISTY","ELLA","ESRA","FARHAN","FEBI","FERA","FIRLI","GILANG","GO","HABIBAH","HABIL","HALIK","HAMIM","ICAN","IING","IMAMAH","INTAN GN","LENI","LILIS","MAHRUS","MAY","MUHAMMAD","NATUL","NIA","NININ","NONIK","P.BUDI","PUPUT","QORI","RAGIL","RANI","RIA","RIFA","RILA","RIRIB","RYAN","SDN","SIFA","SURYA","UCI","VINA","VIO","WARSA","WAWAN","WILDA","WILDAN","YENI","ZEN"];
@@ -439,6 +444,7 @@ function showLogin(){
   document.getElementById('login-form').style.display='';
   document.getElementById('register-form').style.display='none';
   document.getElementById('login-remembered').style.display='none';
+  document.getElementById('lf-err').textContent='';
 }
 function showRegister(){
   document.getElementById('login-form').style.display='none';
@@ -446,23 +452,38 @@ function showRegister(){
   document.getElementById('login-remembered').style.display='none';
 }
 function showSwitchAccount(){
-  document.getElementById('login-remembered').style.display='none';
-  document.getElementById('login-form').style.display='';
-  document.getElementById('lf-email').value='';
-  document.getElementById('lf-pass').value='';
+  auth.signOut().then(()=>{
+    localStorage.removeItem('wp_remember_email');
+    localStorage.removeItem('wp_remember_name');
+    localStorage.removeItem('wp_cred');
+    document.getElementById('login-remembered').style.display='none';
+    document.getElementById('register-form').style.display='none';
+    document.getElementById('login-form').style.display='';
+    document.getElementById('lf-email').value='';
+    document.getElementById('lf-pass').value='';
+    document.getElementById('lf-err').textContent='';
+  }).catch(()=>{
+    localStorage.removeItem('wp_remember_email');
+    localStorage.removeItem('wp_remember_name');
+    localStorage.removeItem('wp_cred');
+    showLogin();
+  });
 }
 
 async function doLogin(){
   const email=document.getElementById('lf-email').value.trim();
   const pass=document.getElementById('lf-pass').value;
-  const remember=document.getElementById('cb-remember').checked;
   document.getElementById('lf-err').textContent='';
   if(!email||!pass){document.getElementById('lf-err').textContent='Email dan password wajib diisi';return;}
   document.getElementById('lf-submit').textContent='Masuk...';
   try{
-    await auth.setPersistence(remember?firebase.auth.Auth.Persistence.LOCAL:firebase.auth.Auth.Persistence.SESSION);
-    await auth.signInWithEmailAndPassword(email,pass);
-    if(remember) localStorage.setItem('wp_remember_email',email);
+    // Always LOCAL - session tidak pernah expired
+    await auth.setPersistence(firebase.auth.Auth.Persistence.LOCAL);
+    const cred=await auth.signInWithEmailAndPassword(email,pass);
+    // Selalu simpan credentials untuk auto re-login jika perlu
+    localStorage.setItem('wp_remember_email',email);
+    localStorage.setItem('wp_remember_name',cred.user.displayName||email.split('@')[0]);
+    localStorage.setItem('wp_cred',enc(email+'::'+pass));
   }catch(e){
     document.getElementById('lf-err').textContent=friendlyAuthError(e.code);
     document.getElementById('lf-submit').textContent='Masuk';
@@ -477,19 +498,50 @@ async function doRegister(){
   if(!email||!pass||!name){document.getElementById('rf-err').textContent='Semua field wajib diisi';return;}
   if(pass.length<6){document.getElementById('rf-err').textContent='Password minimal 6 karakter';return;}
   try{
+    await auth.setPersistence(firebase.auth.Auth.Persistence.LOCAL);
     const cred=await auth.createUserWithEmailAndPassword(email,pass);
     await cred.user.updateProfile({displayName:name});
     localStorage.setItem('wp_remember_email',email);
+    localStorage.setItem('wp_remember_name',name);
+    localStorage.setItem('wp_cred',enc(email+'::'+pass));
   }catch(e){
     document.getElementById('rf-err').textContent=friendlyAuthError(e.code);
   }
 }
 
 async function loginRemembered(){
-  const email=localStorage.getItem('wp_remember_email');
-  if(!email)return showLogin();
-  // Try auto sign-in via persistence
-  showToast('Memuat...','info');
+  const btn=document.getElementById('btn-lanjut');
+  const errEl=document.getElementById('lr-err');
+  if(btn){btn.textContent='⏳ Memuat...';btn.disabled=true;}
+  if(errEl) errEl.textContent='';
+  // Cek apakah user masih aktif di Firebase
+  const user=auth.currentUser;
+  if(user){
+    showAppScreen(user);
+    return;
+  }
+  // Session expired - coba auto re-login dengan saved credentials
+  const saved=localStorage.getItem('wp_cred');
+  if(saved){
+    try{
+      const decoded=dec(saved);
+      const [email,pass]=decoded.split('::');
+      await auth.setPersistence(firebase.auth.Auth.Persistence.LOCAL);
+      await auth.signInWithEmailAndPassword(email,pass);
+      // onAuthStateChanged akan handle showAppScreen
+      return;
+    }catch(e){
+      // Credentials tidak valid (password diganti dll) -> show login form
+      localStorage.removeItem('wp_cred');
+      if(errEl) errEl.textContent='Sesi habis, silakan login ulang';
+      if(btn){btn.textContent='🚀 Lanjutkan';btn.disabled=false;}
+      setTimeout(()=>showSwitchAccount(),1500);
+      return;
+    }
+  }
+  // Tidak ada saved credentials -> show login form
+  if(btn){btn.textContent='🚀 Lanjutkan';btn.disabled=false;}
+  showSwitchAccount();
 }
 
 function showAccountModal(){
@@ -500,6 +552,8 @@ function switchAccount(){
   closeModal('account-modal');
   auth.signOut().then(()=>{
     localStorage.removeItem('wp_remember_email');
+    localStorage.removeItem('wp_remember_name');
+    localStorage.removeItem('wp_cred');
     showLoginScreen();
   });
 }
@@ -507,6 +561,8 @@ async function doLogout(){
   closeModal('account-modal');
   await auth.signOut();
   localStorage.removeItem('wp_remember_email');
+  localStorage.removeItem('wp_remember_name');
+  localStorage.removeItem('wp_cred');
   showLoginScreen();
 }
 
@@ -516,14 +572,22 @@ function friendlyAuthError(code){
 }
 
 function showLoginScreen(){
-  document.getElementById('screen-login').classList.remove('hidden');
-  document.getElementById('screen-app').classList.remove('visible');
+  const loginEl=document.getElementById('screen-login');
+  const appEl=document.getElementById('screen-app');
+  if(loginEl) loginEl.classList.remove('hidden');
+  if(appEl) appEl.classList.remove('visible');
+  if(dbRef){try{dbRef.off();}catch(e){} dbRef=null;}
   const savedEmail=localStorage.getItem('wp_remember_email');
+  const savedName=localStorage.getItem('wp_remember_name');
   if(savedEmail){
-    document.getElementById('remembered-email').textContent=savedEmail;
+    // Show remembered state
     document.getElementById('login-remembered').style.display='';
     document.getElementById('login-form').style.display='none';
     document.getElementById('register-form').style.display='none';
+    document.getElementById('remembered-email').textContent=savedEmail;
+    const nameEl=document.getElementById('remembered-name');
+    if(nameEl) nameEl.textContent=savedName||savedEmail.split('@')[0];
+    document.getElementById('lr-err').textContent='';
   } else {
     showLogin();
   }
@@ -531,10 +595,14 @@ function showLoginScreen(){
 
 function showAppScreen(user){
   currentUser=user; uid=user.uid;
-  document.getElementById('screen-login').classList.add('hidden');
-  document.getElementById('screen-app').classList.add('visible');
-  document.getElementById('hdr-user').textContent=user.displayName||user.email;
-  document.getElementById('acc-email-display').textContent=user.email;
+  const loginEl=document.getElementById('screen-login');
+  const appEl=document.getElementById('screen-app');
+  if(loginEl) loginEl.classList.add('hidden');
+  if(appEl) appEl.classList.add('visible');
+  const hdrUser=document.getElementById('hdr-user');
+  const accEmail=document.getElementById('acc-email-display');
+  if(hdrUser) hdrUser.textContent=user.displayName||user.email;
+  if(accEmail) accEmail.textContent=user.email;
   initDB();
 }
 
@@ -578,8 +646,13 @@ function setSyncStatus(s){
 
 // Auth state
 auth.onAuthStateChanged(user=>{
-  if(user) showAppScreen(user);
-  else showLoginScreen();
+  if(user){
+    // User is logged in via Firebase persistence -> go straight to app
+    showAppScreen(user);
+  } else {
+    // Not logged in -> show login screen (remembered or fresh)
+    showLoginScreen();
+  }
 });
 
 // ══════════════════════════════════════════
@@ -872,54 +945,58 @@ function renderLog(){
 // MEMBERS VIEW
 // ══════════════════════════════════════════
 function renderMembers(){
-  const renderList=(zone,mems)=>{
-    const c=zone==='KRS'?'#3a7bd5':'#e05c3a';
-    const filtered=mems.filter(m=>m.toLowerCase().includes(search.toLowerCase()));
-    const rows=filtered.map((name,i)=>{
-      const info=appData.memberInfo?.[zone+'__'+name]||{};
-      const idBadge=info.id?`<span class="mem-id-badge">${info.id}</span>`:'<span class="mem-id-badge" style="color:#333;border-color:#1e2231">—</span>';
-      const editBtn=!membersLocked?`<button onclick="openEditMember('${zone}','${name}')" style="background:none;border:1px solid #1e3a5f;color:#3a7bd5;padding:4px 8px;border-radius:5px;cursor:pointer;font-size:10px;flex-shrink:0">✏️</button>`:'';
-      const delBtn=!membersLocked?`<button class="delbtn" onclick="deleteMember('${zone}','${name}')">✕</button>`:'';
-      return `<div class="mem-row">
-        <span class="mem-num">${i+1}.</span>
-        ${idBadge}
-        <span class="mem-name-txt">${name}</span>
-        ${info.ip?`<span class="mem-ip-txt">${info.ip}</span>`:''}
-        ${editBtn}${delBtn}
-      </div>`;
-    }).join('');
-    return `<div class="mem-section">
-      <div class="ms-hdr">
-        <span class="ms-title" style="color:${c}">${zone}</span>
-        <span style="font-size:10px;color:#444">${filtered.length} member</span>
-      </div>${rows}</div>`;
-  };
-  const lockBtn=`<div style="display:flex;justify-content:flex-end;margin-bottom:12px">
-    <button onclick="toggleMembersLock()" style="background:${membersLocked?'#0d2b1f':'#1f0d0d'};border:1px solid ${membersLocked?'#5bcea633':'#e05c5c33'};color:${membersLocked?'#5bcea6':'#e05c5c'};padding:7px 16px;border-radius:7px;cursor:pointer;font-size:11px">
-      ${membersLocked?'🔒 Terkunci — Tap untuk Unlock':'🔓 Tidak Terkunci — Tap untuk Lock'}
-    </button></div>`;
+  const zone=newMemberZone; // reuse newMemberZone as "active member view zone"
+  const c=zone==='KRS'?'#3a7bd5':'#e05c3a';
+  const mems=zone==='KRS'?appData.krsMembers:appData.slkMembers;
+  const filtered=mems.filter(m=>m.toLowerCase().includes(search.toLowerCase()));
+
+  const rows=filtered.map((name,i)=>{
+    const info=appData.memberInfo?.[zone+'__'+name]||{};
+    const idBadge=info.id
+      ?`<span class="mem-id-badge">${info.id}</span>`
+      :'<span class="mem-id-badge" style="color:#333;border-color:#1e2231">—</span>';
+    const editBtn=!membersLocked
+      ?`<button onclick="openEditMember('${zone}','${name.replace(/'/g,"\'")}')" style="background:none;border:1px solid #1e3a5f;color:#3a7bd5;padding:4px 8px;border-radius:5px;cursor:pointer;font-size:10px;flex-shrink:0">✏️</button>`:'';
+    const delBtn=!membersLocked
+      ?`<button class="delbtn" onclick="deleteMember('${zone}','${name.replace(/'/g,"\'")}')" style="flex-shrink:0">✕</button>`:'';
+    return `<div class="mem-row">
+      <span class="mem-num">${i+1}.</span>
+      ${idBadge}
+      <span class="mem-name-txt">${name}</span>
+      ${info.ip?`<span class="mem-ip-txt">${info.ip}</span>`:''}
+      ${editBtn}${delBtn}
+    </div>`;
+  }).join('');
+
+  const lockBtn=`<button onclick="toggleMembersLock()" style="background:${membersLocked?'#0d2b1f':'#1f0d0d'};border:1px solid ${membersLocked?'#5bcea633':'#e05c5c33'};color:${membersLocked?'#5bcea6':'#e05c5c'};padding:7px 16px;border-radius:7px;cursor:pointer;font-size:11px">
+    ${membersLocked?'🔒 Terkunci':'🔓 Tidak Terkunci'}</button>`;
+
   const addForm=membersLocked?'':`<div class="add-form">
-    <div class="af-title">TAMBAH MEMBER BARU</div>
+    <div class="af-title">TAMBAH MEMBER BARU KE ${zone}</div>
     <div class="af-grid">
       <div><div style="font-size:10px;color:#555;margin-bottom:4px">NAMA</div>
         <input class="af-input" id="af-name" placeholder="Nama member" onkeydown="if(event.key==='Enter')addMember()"/></div>
       <div><div style="font-size:10px;color:#555;margin-bottom:4px">ID PELANGGAN</div>
         <input class="af-input" id="af-id" placeholder="Opsional"/></div>
-      <div><div style="font-size:10px;color:#555;margin-bottom:4px">IP / LINK ROUTER</div>
+      <div style="grid-column:span 2"><div style="font-size:10px;color:#555;margin-bottom:4px">IP / LINK ROUTER</div>
         <input class="af-input" id="af-ip" placeholder="192.168.x.x atau http://..."/></div>
-      <div><div style="font-size:10px;color:#555;margin-bottom:4px">ZONA</div>
-        <div style="display:flex;gap:5px;background:#131620;padding:3px;border-radius:20px;border:1px solid #1e2231">
-          <button style="flex:1;padding:6px;border-radius:16px;border:none;cursor:pointer;font-size:11px;transition:all .2s;background:${newMemberZone==='KRS'?'#3a7bd5':'transparent'};color:${newMemberZone==='KRS'?'#fff':'#555'}" onclick="newMemberZone='KRS';render()">KRS</button>
-          <button style="flex:1;padding:6px;border-radius:16px;border:none;cursor:pointer;font-size:11px;transition:all .2s;background:${newMemberZone==='SLK'?'#e05c3a':'transparent'};color:${newMemberZone==='SLK'?'#fff':'#555'}" onclick="newMemberZone='SLK';render()">SLK</button>
-        </div>
-      </div>
     </div>
-    <button style="width:100%;background:var(--zc);color:#fff;border:none;padding:10px;border-radius:8px;font-size:13px;font-weight:600;cursor:pointer" onclick="addMember()">+ Tambah Member</button>
+    <button style="width:100%;background:${c};color:#fff;border:none;padding:10px;border-radius:8px;font-size:13px;font-weight:600;cursor:pointer" onclick="addMember()">+ Tambah ke ${zone}</button>
   </div>`;
-  return lockBtn+addForm+`<input class="search-box" placeholder="🔍 Cari nama..." value="${search}" oninput="search=this.value;render()"/>
-  ${renderList('KRS',appData.krsMembers)}
-  ${renderList('SLK',appData.slkMembers)}`;
+
+  return `<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
+    <div style="display:flex;gap:4px;background:#131620;padding:3px;border-radius:24px;border:1px solid #1e2231">
+      <button onclick="newMemberZone='KRS';search='';render()" style="padding:7px 22px;border-radius:20px;border:none;cursor:pointer;font-size:12px;font-weight:600;transition:all .2s;background:${zone==='KRS'?'#3a7bd5':'transparent'};color:${zone==='KRS'?'#fff':'#555'}">KRS <span style="opacity:.6;font-size:10px">(${appData.krsMembers.length})</span></button>
+      <button onclick="newMemberZone='SLK';search='';render()" style="padding:7px 22px;border-radius:20px;border:none;cursor:pointer;font-size:12px;font-weight:600;transition:all .2s;background:${zone==='SLK'?'#e05c3a':'transparent'};color:${zone==='SLK'?'#fff':'#555'}">SLK <span style="opacity:.6;font-size:10px">(${appData.slkMembers.length})</span></button>
+    </div>
+    ${lockBtn}
+  </div>
+  ${addForm}
+  <input class="search-box" placeholder="🔍 Cari nama di ${zone}..." value="${search}" oninput="search=this.value;render()"/>
+  <div style="font-size:10px;color:#444;margin-bottom:8px">${filtered.length} member${search?' ditemukan':''} · ${zone}</div>
+  ${rows||'<div style="text-align:center;padding:20px;color:#555;font-size:12px">Tidak ada member</div>'}`;
 }
+
 
 // ══════════════════════════════════════════
 // EVENTS & ACTIONS
@@ -1220,16 +1297,52 @@ function importData(e){
   const reader=new FileReader();
   reader.onload=ev=>{
     try{
-      const data=JSON.parse(ev.target.result);
-      if(data.krsMembers) appData.krsMembers=data.krsMembers;
-      if(data.slkMembers) appData.slkMembers=data.slkMembers;
-      if(data.payments) appData.payments=data.payments;
-      if(data.memberInfo) appData.memberInfo=data.memberInfo;
-      saveDB({action:'⬆️ Import data dari file JSON'});
-      render();showToast('Data berhasil di-import!');
-    }catch{showToast('File tidak valid!','err');}
+      const raw=ev.target.result;
+      // Strip BOM if present
+      const cleaned=raw.charCodeAt(0)===0xFEFF?raw.slice(1):raw;
+      const data=JSON.parse(cleaned);
+      // Validate structure
+      if(!data||typeof data!=='object'){showToast('Format file tidak valid!','err');return;}
+      if(!data.krsMembers&&!data.slkMembers&&!data.payments){
+        showToast('File tidak berisi data WiFi Pay!','err');return;
+      }
+      // Pause Firebase listener to prevent overwrite race condition
+      if(dbRef) dbRef.off();
+      // Apply data
+      if(Array.isArray(data.krsMembers)) appData.krsMembers=data.krsMembers;
+      if(Array.isArray(data.slkMembers)) appData.slkMembers=data.slkMembers;
+      if(data.payments&&typeof data.payments==='object') appData.payments=data.payments;
+      if(data.memberInfo&&typeof data.memberInfo==='object') appData.memberInfo=data.memberInfo;
+      if(!appData.activityLog) appData.activityLog=[];
+      // Write to Firebase directly
+      if(dbRef===null) dbRef=db.ref('users/'+uid+'/data');
+      setSyncStatus('loading');
+      dbRef.set(appData)
+        .then(()=>{
+          setSyncStatus('ok');
+          // Re-attach listener after write
+          dbRef.on('value',snap=>{
+            const val=snap.val();
+            if(val) appData=Object.assign({krsMembers:[],slkMembers:[],payments:{},memberInfo:{},activityLog:[]},val);
+            render();
+          });
+          saveDB({action:'⬆️ Import data dari file JSON',detail:`${appData.krsMembers.length} KRS, ${appData.slkMembers.length} SLK`});
+          render();
+          showToast('Data berhasil di-import! '+appData.krsMembers.length+' KRS, '+appData.slkMembers.length+' SLK');
+        })
+        .catch(err=>{
+          setSyncStatus('err');
+          showToast('Gagal simpan ke cloud: '+err.message,'err');
+          // Re-attach listener anyway
+          dbRef.on('value',snap=>{const val=snap.val();if(val)appData=Object.assign({krsMembers:[],slkMembers:[],payments:{},memberInfo:{},activityLog:[]},val);render();});
+        });
+    }catch(err){
+      console.error('Import error:',err);
+      showToast('File tidak valid! Pastikan file .json dari WiFi Pay','err');
+    }
   };
-  reader.readAsText(file);e.target.value='';
+  reader.readAsText(file);
+  e.target.value='';
 }
 
 // ══════════════════════════════════════════
