@@ -1304,54 +1304,63 @@ function importData(e){
       if(!data||typeof data!=='object'||(!data.krsMembers&&!data.payments)){
         showToast('File tidak valid!','err');return;
       }
-      // Terapkan data ke appData lokal dulu
+      // MATIKAN listener dulu agar tidak overwrite data import
+      if(dbRef){dbRef.off();dbRef=null;}
+      // Terapkan ke appData
       if(Array.isArray(data.krsMembers)) appData.krsMembers=data.krsMembers;
       if(Array.isArray(data.slkMembers)) appData.slkMembers=data.slkMembers;
       if(data.payments&&typeof data.payments==='object') appData.payments=data.payments;
       if(data.memberInfo&&typeof data.memberInfo==='object') appData.memberInfo=data.memberInfo;
       appData.activityLog=data.activityLog||[];
-      // Render langsung - tampilkan data
+      // Render sekarang - data langsung tampil
       render();
       showToast('✅ Import berhasil! '+appData.krsMembers.length+' KRS, '+appData.slkMembers.length+' SLK');
-      // Sync ke Firebase di background - pisah jadi 3 bagian agar tidak timeout
       setSyncStatus('loading');
+      // Upload ke Firebase
       const ref=db.ref('users/'+uid+'/data');
-      // Simpan members & memberInfo dulu (kecil)
-      ref.child('krsMembers').set(appData.krsMembers)
-        .then(()=>ref.child('slkMembers').set(appData.slkMembers))
-        .then(()=>ref.child('memberInfo').set(appData.memberInfo||{}))
-        .then(()=>ref.child('activityLog').set(appData.activityLog||[]))
+      const updates={
+        krsMembers: appData.krsMembers,
+        slkMembers: appData.slkMembers,
+        memberInfo: appData.memberInfo||{},
+        activityLog: []
+      };
+      // Upload members dulu
+      ref.update(updates)
         .then(()=>{
-          // Simpan payments dalam batch kecil per tahun
-          const byYear={};
+          // Upload payments via update (tidak replace seluruh node)
+          const payUpdates={};
           Object.entries(appData.payments).forEach(([k,v])=>{
-            const yr=k.split('__')[2]||'unknown';
-            if(!byYear[yr]) byYear[yr]={};
-            byYear[yr][k]=v;
+            payUpdates['payments/'+k]=v;
           });
-          // Simpan semua payments sekaligus tapi via update (lebih efisien)
-          const updates={};
-          Object.entries(appData.payments).forEach(([k,v])=>{
-            updates['payments/'+k]=v;
-          });
-          return ref.update(updates);
+          return ref.update(payUpdates);
         })
         .then(()=>{
           setSyncStatus('ok');
-          // Pasang ulang listener
-          if(dbRef) dbRef.off();
+          showToast('☁️ Sync cloud selesai!');
+          // Pasang listener lagi - data di Firebase sudah benar
           dbRef=ref;
           dbRef.on('value',snap=>{
             const val=snap.val();
-            if(val) appData=Object.assign({krsMembers:[],slkMembers:[],payments:{},memberInfo:{},activityLog:[]},val);
+            if(val) appData=Object.assign(
+              {krsMembers:[],slkMembers:[],payments:{},memberInfo:{},activityLog:[]},
+              val
+            );
             render();
-          });
-          showToast('☁️ Sync ke cloud selesai!');
+          },{onlyOnce:false});
         })
         .catch(err=>{
           setSyncStatus('err');
-          console.error('Firebase sync error:',err);
-          showToast('Data tampil lokal, sync cloud gagal: '+err.message,'err');
+          showToast('Sync gagal: '+err.message,'err');
+          // Pasang listener lagi meski gagal
+          dbRef=ref;
+          dbRef.on('value',snap=>{
+            const val=snap.val();
+            if(val) appData=Object.assign(
+              {krsMembers:[],slkMembers:[],payments:{},memberInfo:{},activityLog:[]},
+              val
+            );
+            render();
+          });
         });
     }catch(err){
       showToast('Gagal baca file: '+err.message,'err');
