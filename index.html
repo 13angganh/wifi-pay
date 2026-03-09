@@ -684,6 +684,8 @@ function initDB(){
   dbRef=db.ref('users/'+uid+'/data');
   dbRef.on('value',snap=>{
     const val=snap.val();
+    // Jangan overwrite appData saat sedang menyimpan atau baru saja menyimpan
+    if(_isSaving || (Date.now()-_lastSaveTs)<1500) return;
     if(val&&(val.krsMembers||val.payments)){
       // Ada data di Firebase - pakai langsung
       appData={
@@ -710,6 +712,8 @@ function initDB(){
   },err=>{setSyncStatus('err');});
 }
 
+let _isSaving=false;
+let _lastSaveTs=0;
 function saveDB(logEntry){
   if(!dbRef) return;
   setSyncStatus('loading');
@@ -718,7 +722,15 @@ function saveDB(logEntry){
     appData.activityLog.unshift({...logEntry,ts:Date.now(),user:currentUser?.email||'—'});
     if(appData.activityLog.length>200) appData.activityLog=appData.activityLog.slice(0,200);
   }
-  dbRef.set(appData).then(()=>setSyncStatus('ok')).catch(()=>setSyncStatus('err'));
+  _isSaving=true;
+  _lastSaveTs=Date.now();
+  dbRef.set(appData)
+    .then(()=>{
+      setSyncStatus('ok');
+      // Setelah Firebase konfirmasi tersimpan, baru izinkan listener
+      setTimeout(()=>{_isSaving=false;},1000);
+    })
+    .catch(()=>{setSyncStatus('err'); _isSaving=false;});
 }
 
 function setSyncStatus(s){
