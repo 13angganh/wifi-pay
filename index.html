@@ -686,17 +686,19 @@ function initDB(){
   dbRef=db.ref('users/'+uid+'/data');
   dbRef.on('value',snap=>{
     const val=snap.val();
-    // Jangan overwrite appData saat sedang menyimpan atau baru saja menyimpan
-    if(_isSaving || (Date.now()-_lastSaveTs)<1500) return;
     if(val&&(val.krsMembers||val.payments)){
-      // Ada data di Firebase - pakai langsung
+      // Merge: pakai data Firebase tapi pertahankan freeMembers lokal jika Firebase belum update
+      const remoteFree = val.freeMembers||{};
+      const localFree = appData.freeMembers||{};
+      // Gabungkan: local wins (lebih baru), remote sebagai fallback
+      const mergedFree = Object.assign({}, remoteFree, localFree);
       appData={
         krsMembers: val.krsMembers||[],
         slkMembers: val.slkMembers||[],
         payments: val.payments||{},
         memberInfo: val.memberInfo||{},
         activityLog: val.activityLog||[],
-        freeMembers: val.freeMembers||{}
+        freeMembers: mergedFree
       };
       // Auto-hapus log edit non-bayar > 7 hari
       cleanOldEditLogs();
@@ -793,7 +795,7 @@ function isFree(zone,name,year,month){
   if(!fm||!fm.active) return false;
   const ym=year*12+month;
   const fromYm=fm.fromYear*12+fm.fromMonth;
-  const toYm=fm.toYear!==undefined&&fm.toMonth!==undefined ? fm.toYear*12+fm.toMonth : Infinity;
+  const toYm=(fm.toYear!=null&&fm.toMonth!=null) ? fm.toYear*12+fm.toMonth : Infinity;
   return ym>=fromYm && ym<=toYm;
 }
 
@@ -1525,7 +1527,10 @@ function saveFreeModal(){
   }
   if(!appData.freeMembers) appData.freeMembers={};
   const key=zone+'__'+name;
-  appData.freeMembers[key]={active:true,fromYear,fromMonth,toYear,toMonth};
+  // Firebase tidak support undefined - pakai null untuk "selamanya"
+  const freeData={active:true,fromYear,fromMonth};
+  if(!noEnd){freeData.toYear=toYear;freeData.toMonth=toMonth;}
+  appData.freeMembers[key]=freeData;
   saveDB({action:`🆓 Set Free Member ${zone} - ${name}`,detail:`Dari ${MONTHS[fromMonth]} ${fromYear}${noEnd?' (selamanya)':' s/d '+MONTHS[toMonth]+' '+toYear}`});
   showToast(`${name} dijadikan free member ✅`);
   closeFreeModal();
@@ -1535,7 +1540,8 @@ function saveFreeModal(){
 function removeFreeModal(zone,name){
   const key=zone+'__'+name;
   if(!appData.freeMembers?.[key]) return;
-  delete appData.freeMembers[key];
+  // Set active:false agar Firebase update dan merge tidak restore
+  appData.freeMembers[key]={active:false};
   saveDB({action:`💳 Kembalikan ke Berbayar ${zone} - ${name}`,detail:`Free member dihapus`});
   showToast(`${name} dikembalikan ke berbayar`);
   closeFreeModal();
