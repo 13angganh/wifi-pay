@@ -216,6 +216,39 @@ img{pointer-events:none}
 <body>
 
 <!-- ══ LOGIN SCREEN ══ -->
+<!-- ══ FREE MEMBER MODAL ══ -->
+<div id="free-modal" style="display:none;position:fixed;inset:0;background:#000a;z-index:9000;align-items:center;justify-content:center" onclick="if(event.target===this)closeFreeModal()">
+  <div class="modal" style="width:min(360px,95vw)">
+    <div class="modal-title" id="fm-title">🆓 Free Member</div>
+    <input type="hidden" id="fm-zone"/><input type="hidden" id="fm-name"/>
+    <div style="margin-bottom:10px">
+      <div style="font-size:10px;color:#555;margin-bottom:5px;letter-spacing:.06em">MULAI GRATIS DARI</div>
+      <div style="display:flex;gap:6px">
+        <select id="fm-from-year" class="cs" style="flex:1"></select>
+        <select id="fm-from-month" class="cs" style="flex:1"></select>
+      </div>
+    </div>
+    <div style="margin-bottom:10px">
+      <label style="display:flex;align-items:center;gap:8px;font-size:11px;color:#888;cursor:pointer;margin-bottom:8px">
+        <input type="checkbox" id="fm-no-end" onchange="toggleFmEnd()" style="accent-color:#5bcea6"/>
+        Gratis selamanya (tanpa tanggal selesai)
+      </label>
+      <div id="fm-end-row" style="display:flex;flex-direction:column;gap:5px">
+        <div style="font-size:10px;color:#555;letter-spacing:.06em">SAMPAI DENGAN</div>
+        <div style="display:flex;gap:6px">
+          <select id="fm-to-year" class="cs" style="flex:1"></select>
+          <select id="fm-to-month" class="cs" style="flex:1"></select>
+        </div>
+      </div>
+    </div>
+    <div style="display:flex;gap:8px;margin-top:14px">
+      <button onclick="saveFreeModal()" style="flex:1;background:#0a2a18;border:1px solid #5bcea6;color:#5bcea6;padding:10px;border-radius:8px;cursor:pointer;font-weight:600;font-size:12px">✅ Simpan Free</button>
+      <button onclick="removeFreeModal(document.getElementById('fm-zone').value,document.getElementById('fm-name').value)" style="flex:1;background:#1f0d0d;border:1px solid #e05c5c;color:#e05c5c;padding:10px;border-radius:8px;cursor:pointer;font-weight:600;font-size:12px">💳 Kembalikan Berbayar</button>
+    </div>
+    <button onclick="closeFreeModal()" style="width:100%;margin-top:8px;background:none;border:1px solid #1e2231;color:#444;padding:8px;border-radius:8px;cursor:pointer;font-size:12px">Batal</button>
+  </div>
+</div>
+
 <!-- ══ UPDATE BANNER ══ -->
 <div id="update-banner">
   <span class="update-msg">🆕 Ada versi terbaru WiFi Pay!</span>
@@ -439,7 +472,7 @@ const DEFAULT_SLK=["AFAN","AIDI","AMIN","ANAS","ANGGUN","ANIS","BAY","CLARA","DA
 // STATE
 // ══════════════════════════════════════════
 let currentUser=null, uid=null;
-let appData={krsMembers:[...DEFAULT_KRS],slkMembers:[...DEFAULT_SLK],payments:{},memberInfo:{},activityLog:[]};
+let appData={krsMembers:[...DEFAULT_KRS],slkMembers:[...DEFAULT_SLK],payments:{},memberInfo:{},activityLog:[],freeMembers:{}};
 let activeZone="KRS", currentView="entry";
 let selYear=new Date().getFullYear(), selMonth=new Date().getMonth();
 let search="", filterStatus="all", expandedCard=null;
@@ -658,14 +691,17 @@ function initDB(){
         slkMembers: val.slkMembers||[],
         payments: val.payments||{},
         memberInfo: val.memberInfo||{},
-        activityLog: val.activityLog||[]
+        activityLog: val.activityLog||[],
+        freeMembers: val.freeMembers||{}
       };
+      // Auto-hapus log edit non-bayar > 7 hari
+      cleanOldEditLogs();
     } else if(!val){
       // Firebase kosong - pakai DEFAULT
       appData={
         krsMembers:[...DEFAULT_KRS],
         slkMembers:[...DEFAULT_SLK],
-        payments:{},memberInfo:{},activityLog:[]
+        payments:{},memberInfo:{},activityLog:[],freeMembers:{}
       };
     }
     // Jika val ada tapi krsMembers belum (masih proses upload) - jangan overwrite
@@ -737,6 +773,42 @@ window.addEventListener('pageshow',e=>{
 // ══════════════════════════════════════════
 function getKey(zone,name,year,month){return `${zone}__${fbKey(name)}__${year}__${month}`;}
 function getPay(zone,name,year,month){return appData.payments?.[getKey(zone,name,year,month)]??null;}
+
+// Cek apakah member free di bulan/tahun tertentu
+function isFree(zone,name,year,month){
+  const key=zone+'__'+name;
+  const fm=appData.freeMembers?.[key];
+  if(!fm||!fm.active) return false;
+  const ym=year*12+month;
+  const fromYm=fm.fromYear*12+fm.fromMonth;
+  const toYm=fm.toYear!==undefined&&fm.toMonth!==undefined ? fm.toYear*12+fm.toMonth : Infinity;
+  return ym>=fromYm && ym<=toYm;
+}
+
+// getPay efektif: kalau free return 0, kalau tidak free return raw
+function getEffectivePay(zone,name,year,month){
+  if(isFree(zone,name,year,month)) return 0;
+  return appData.payments?.[getKey(zone,name,year,month)]??null;
+}
+
+// Bersihkan log edit non-bayar yang > 7 hari
+function cleanOldEditLogs(){
+  if(!appData.activityLog||!appData.activityLog.length) return;
+  const now=Date.now();
+  const sevenDays=7*24*60*60*1000;
+  const before=appData.activityLog.length;
+  appData.activityLog=appData.activityLog.filter(l=>{
+    // Log bayar (mengandung 💰 atau 🗑️ Pay atau Free) - simpan permanen
+    if(l.action&&(l.action.includes('💰')||l.action.includes('🗑️ Hapus bayar')||l.action.includes('🆓')||l.action.includes('Quick Pay'))) return true;
+    // Log edit (non-bayar) - hapus setelah 7 hari
+    if(l.ts&&(now-l.ts)>sevenDays) return false;
+    return true;
+  });
+  // Simpan jika ada yang dihapus
+  if(appData.activityLog.length<before && dbRef){
+    dbRef.set(appData);
+  }
+}
 function members(){if(activeZone==='TOTAL')return [...appData.krsMembers,...appData.slkMembers];return activeZone==='KRS'?appData.krsMembers:appData.slkMembers;}
 function getInfo(name){return appData.memberInfo?.[activeZone+'__'+name]||{};}
 
@@ -820,24 +892,38 @@ function renderEntry(){
   const banner=deferredPrompt?`<div class="inst-banner"><div class="inst-txt">📲 Install WiFi Pay ke layar beranda!</div><button class="inst-btn" onclick="installPWA()">Install</button></div>`:'';
   const cards=mems.map((name,i)=>{
     const val=getPay(activeZone,name,selYear,selMonth);
+    const freeMember=isFree(activeZone,name,selYear,selMonth);
     const info=getInfo(name);
     const exp=expandedCard===name;
     const idEl=info.id?(info.ip?`<a class="mc-id" href="${info.ip.startsWith('http')?info.ip:'http://'+info.ip}" target="_blank">${info.id}</a>`:`<span class="mc-id no-link">${info.id}</span>`):'';
-    const tagEl=val>0?`<span class="mc-tag tpaid">✓</span>`:val===null?`<span class="mc-tag tunpaid">✕</span>`:`<span style="font-size:9px;color:#444">○</span>`;
+    const tagEl=freeMember?`<span class="mc-tag" style="background:#0a3a25;color:#5bcea6;border-color:#5bcea633;font-size:9px">🆓</span>`:val>0?`<span class="mc-tag tpaid">✓</span>`:val===null?`<span class="mc-tag tunpaid">✕</span>`:`<span style="font-size:9px;color:#444">○</span>`;
+    // Bulan entri khusus (bisa beda dari selMonth)
+    const entryYear=window._entryYear?.[name]??selYear;
+    const entryMonth=window._entryMonth?.[name]??selMonth;
+    const entryVal=getPay(activeZone,name,entryYear,entryMonth);
+    const entryFree=isFree(activeZone,name,entryYear,entryMonth);
+    const moOptE=MONTHS.map((m,i)=>`<option value="${i}"${i===entryMonth?' selected':''}>${m}</option>`).join('');
+    const yrOptE=YEARS.map(y=>`<option value="${y}"${y===entryYear?' selected':''}>${y}</option>`).join('');
     const body=exp?`
     <div class="mc-body">
+      <div class="mc-row" style="margin-bottom:6px">
+        <span class="mc-label">BULAN</span>
+        <select class="cs" style="font-size:11px;padding:4px 8px" onchange="setEntryMonth('${name}',this.value,'year')">${yrOptE}</select>
+        <select class="cs" style="font-size:11px;padding:4px 8px" onchange="setEntryMonth('${name}',this.value,'month')">${moOptE}</select>
+      </div>
+      ${entryFree?`<div style="background:#0a2a18;border:1px solid #5bcea633;border-radius:7px;padding:8px;font-size:11px;color:#5bcea6;text-align:center">🆓 Member Gratis periode ini</div>`:`
       <div class="mc-row">
         <span class="mc-label">JUMLAH</span>
-        <input class="mc-input" type="number" inputmode="numeric" placeholder="0" value="${val!==null?val:''}" data-name="${name}" id="inp-${name.replace(/\s/g,'_')}"/>
-        ${val!==null?`<button class="delbtn" onclick="clearPay('${name}')">✕</button>`:''}
+        <input class="mc-input" type="number" inputmode="numeric" placeholder="0" value="${entryVal!==null?entryVal:''}" data-name="${name}" id="inp-${name.replace(/\s/g,'_')}" onchange="saveEntryPay('${name}',this.value)"/>
+        ${entryVal!==null?`<button class="delbtn" onclick="clearEntryPay('${name}')">✕</button>`:''}
       </div>
       <div class="mc-row">
         <span class="mc-label">TGL BAYAR</span>
-        <input class="mc-date" type="date" value="${info['date_'+selYear+'_'+selMonth]||''}" data-field="date_${selYear}_${selMonth}" data-name="${name}" onchange="saveInfoField(this)"/>
+        <input class="mc-date" type="date" value="${info['date_'+entryYear+'_'+entryMonth]||''}" data-field="date_${entryYear}_${entryMonth}" data-name="${name}" onchange="saveInfoField(this)"/>
       </div>
       <div class="mc-row"><span class="mc-label">QUICK</span>
-        <div class="qrow">${QUICK.map(a=>`<button class="qb" onclick="quickPay('${name}',${a})">${a}</button>`).join('')}</div>
-      </div>
+        <div class="qrow">${QUICK.map(a=>`<button class="qb" onclick="quickEntryPay('${name}',${a})">${a}</button>`).join('')}</div>
+      </div>`}
     </div>`:'';
     return `<div class="mcard${exp?' expanded':''}" id="card-${name.replace(/\s/g,'_')}">
       <div class="mc-top" onclick="toggleCard('${name}')">
@@ -877,8 +963,13 @@ function renderRekap(){
   const rows=mems.map((name,i)=>{
     let rt=0;
     const cells=MONTHS.map((_,mi)=>{
-      const v=getPay(activeZone,name,selYear,mi);rt+=v||0;
-      return `<td class="${v>0?'cv':v===0?'cz':'cn'}" onclick="goEntry('${name}',${mi})">${v!==null?(v*1000).toLocaleString('id-ID'):'—'}</td>`;
+      const raw=getPay(activeZone,name,selYear,mi);
+      const free=isFree(activeZone,name,selYear,mi);
+      const v=free?0:raw;
+      rt+=v||0;
+      const cls=v>0?'cv':v===0?'cz':'cn';
+      const disp=free?`<span style="font-size:8px;opacity:.7">🆓</span>`:v!==null?(v*1000).toLocaleString('id-ID'):'—';
+      return `<td class="${cls}" onclick="goEntry('${name}',${mi})" title="${free?'Free Member':''}">${disp}</td>`;
     }).join('');
     return `<tr><td class="stk" style="left:0;font-size:10px;color:#333;padding-left:8px;min-width:22px">${i+1}</td>
     <td class="stk" style="left:22px;min-width:95px;font-size:12px;text-align:left;padding-left:6px">${name}</td>
@@ -941,21 +1032,30 @@ function renderTunggakan(){
   const moOpts=MONTHS.map((m,i)=>`<option value="${i}"${i===selMonth?' selected':''}>${m}</option>`).join('');
   const mems=members();
 
-  // Semua member dengan tunggakan sampai bulan ini
+  // Semua member dengan tunggakan sampai bulan ini (exclude free member di bulan tersebut)
   const allArrears=mems.map(name=>{
-    const unpaid=getArrears(activeZone,name,selYear,selMonth);
+    // Hitung tunggakan hanya di bulan yang dia TIDAK free
+    const unpaid=getArrears(activeZone,name,selYear,selMonth).filter(u=>!isFree(activeZone,name,u.y,u.mi));
     return {name,unpaid,count:unpaid.length};
   }).filter(x=>x.count>0).sort((a,b)=>b.count-a.count);
 
-  // Filter: bulan ini saja belum bayar
-  const unpaidThisMonth=mems.filter(m=>getPay(activeZone,m,selYear,selMonth)===null);
-
-  // Pisah rajin vs nakal
-  const nakal=allArrears; // punya tunggakan apapun
+  // Pisah rajin (tidak punya tunggakan non-free) vs nakal
+  // Free member dikecualikan dari KEDUA list
+  const nakal=allArrears.filter(x=>{
+    const key=activeZone+'__'+x.name;
+    const fm=appData.freeMembers?.[key];
+    // Jika member ini free selamanya/sekarang -> skip dari nakal juga
+    return true; // tetap masuk nakal jika ada tunggakan di luar periode free
+  });
   const rajin=mems.filter(name=>{
-    const unpaid=getArrears(activeZone,name,selYear,selMonth);
+    // Cek apakah dia SEPENUHNYA gratis di bulan ini
+    const nowFree=isFree(activeZone,name,selYear,selMonth);
+    if(nowFree) return false; // free member tidak masuk rajin
+    const unpaid=getArrears(activeZone,name,selYear,selMonth).filter(u=>!isFree(activeZone,name,u.y,u.mi));
     return unpaid.length===0;
   });
+  // Daftar free member saat ini
+  const freeList=mems.filter(name=>isFree(activeZone,name,selYear,selMonth));
 
   // Mode tampilan: 'nakal' atau 'rajin'
   const mode=window._tunggakanMode||'nakal';
@@ -983,19 +1083,32 @@ function renderTunggakan(){
         </div>
       </div>`).join('');
 
+  const freeCards=freeList.length===0?'':freeList.map((name,i)=>{
+    const fm=appData.freeMembers?.[activeZone+'__'+name];
+    const toStr=fm?.toYear!==undefined?` s/d ${MONTHS[fm.toMonth]} ${fm.toYear}`:'(selamanya)';
+    return `<div class="tcard" style="border-color:#5bcea622;background:#0a1a10">
+      <div style="display:flex;justify-content:space-between;align-items:center">
+        <span class="tcard-name" style="color:#5bcea6">🆓 ${i+1}. ${name}</span>
+        <span style="font-size:10px;color:#5bcea6">Gratis</span>
+      </div>
+      <div style="font-size:10px;color:#444;margin-top:3px">Dari ${MONTHS[fm.fromMonth]} ${fm.fromYear}${toStr}</div>
+    </div>`;
+  }).join('');
+
   return `<div class="ctrl-row">
     <select class="cs" onchange="selMonth=+this.value;render()">${moOpts}</select>
     <select class="cs" onchange="selYear=+this.value;render()">${yrOpts}</select>
   </div>
   <div style="display:flex;gap:4px;margin-bottom:10px;background:#131620;padding:3px;border-radius:20px;border:1px solid #1e2231">
-    <button onclick="window._tunggakanMode='nakal';render()" style="flex:1;padding:7px;border-radius:16px;border:none;cursor:pointer;font-size:11px;font-weight:600;background:${mode==='nakal'?'#e05c3a':'transparent'};color:${mode==='nakal'?'#fff':'#555'}">⚠️ Nunggak / Bermasalah (${nakal.length})</button>
-    <button onclick="window._tunggakanMode='rajin';render()" style="flex:1;padding:7px;border-radius:16px;border:none;cursor:pointer;font-size:11px;font-weight:600;background:${mode==='rajin'?'#5bcea6':'transparent'};color:${mode==='rajin'?'#0a0c12':'#555'}">🌟 Rajin Bayar (${rajin.length})</button>
+    <button onclick="window._tunggakanMode='nakal';render()" style="flex:1;padding:7px;border-radius:16px;border:none;cursor:pointer;font-size:11px;font-weight:600;background:${mode==='nakal'?'#e05c3a':'transparent'};color:${mode==='nakal'?'#fff':'#555'}">⚠️ Nunggak (${nakal.length})</button>
+    <button onclick="window._tunggakanMode='rajin';render()" style="flex:1;padding:7px;border-radius:16px;border:none;cursor:pointer;font-size:11px;font-weight:600;background:${mode==='rajin'?'#5bcea6':'transparent'};color:${mode==='rajin'?'#0a0c12':'#555'}">🌟 Rajin (${rajin.length})</button>
+    <button onclick="window._tunggakanMode='free';render()" style="flex:1;padding:7px;border-radius:16px;border:none;cursor:pointer;font-size:11px;font-weight:600;background:${mode==='free'?'#3a5bce':'transparent'};color:${mode==='free'?'#fff':'#555'}">🆓 Free (${freeList.length})</button>
   </div>
   <div class="sum-bar" style="margin-bottom:10px">
-    <div class="sum-lbl">${mode==='nakal'?'TUNGGAKAN S/D':'LUNAS S/D'} ${MONTHS[selMonth].toUpperCase()} ${selYear} · ${activeZone}</div>
-    <div class="sum-val" style="color:${mode==='nakal'?'#e05c5c':'#5bcea6'}">${mode==='nakal'?nakal.length:rajin.length} pelanggan</div>
+    <div class="sum-lbl">${mode==='nakal'?'TUNGGAKAN S/D':mode==='rajin'?'LUNAS S/D':'FREE MEMBER'} ${MONTHS[selMonth].toUpperCase()} ${selYear} · ${activeZone}</div>
+    <div class="sum-val" style="color:${mode==='nakal'?'#e05c5c':mode==='rajin'?'#5bcea6':'#3a7bd5'}">${mode==='nakal'?nakal.length:mode==='rajin'?rajin.length:freeList.length} pelanggan</div>
   </div>
-  ${mode==='nakal'?nakalCards:rajinCards}`;
+  ${mode==='nakal'?nakalCards:mode==='rajin'?rajinCards:freeCards}`;
 }
 
 // ══════════════════════════════════════════
@@ -1110,52 +1223,123 @@ function initCharts(){
 // ══════════════════════════════════════════
 function renderLog(){
   const logs=appData.activityLog||[];
-  if(!logs.length) return `<div style="text-align:center;padding:30px;color:#555;font-size:13px">📋 Belum ada riwayat</div>`;
-  return `<div style="font-size:10px;color:#555;margin-bottom:10px;letter-spacing:.06em">${logs.length} AKTIVITAS TERAKHIR</div>`+
-  logs.slice(0,100).map(l=>{
-    const d=new Date(l.ts);
-    const dt=`${d.toLocaleDateString('id-ID')} ${d.toLocaleTimeString('id-ID',{hour:'2-digit',minute:'2-digit'})}`;
-    return `<div class="log-item">
-      <div class="log-time">${dt} · ${l.user||'—'}</div>
-      <div class="log-action">${l.action}</div>
-      ${l.detail?`<div class="log-detail">${l.detail}</div>`:''}
-    </div>`;
-  }).join('');
+  const logSearch=window._logSearch||'';
+  const logYear=window._logYear??'';
+  const logMonth=window._logMonth??'';
+
+  let filtered=logs;
+
+  // Filter search nama/aksi
+  if(logSearch.trim()){
+    const q=logSearch.trim().toLowerCase();
+    filtered=filtered.filter(l=>(l.action||'').toLowerCase().includes(q)||(l.detail||'').toLowerCase().includes(q));
+  }
+  // Filter bulan/tahun
+  if(logYear||logMonth!==''){
+    filtered=filtered.filter(l=>{
+      const d=new Date(l.ts);
+      if(logYear && d.getFullYear()!==+logYear) return false;
+      if(logMonth!=='' && d.getMonth()!==+logMonth) return false;
+      return true;
+    });
+  }
+
+  const yrOpts=`<option value="">Semua Tahun</option>`+YEARS.map(y=>`<option value="${y}"${logYear==y?' selected':''}>${y}</option>`).join('');
+  const moOpts=`<option value="">Semua Bulan</option>`+MONTHS.map((m,i)=>`<option value="${i}"${logMonth===i?' selected':''}>${m}</option>`).join('');
+
+  const logItems=filtered.length===0
+    ?`<div style="text-align:center;padding:30px;color:#555;font-size:13px">📋 Tidak ada log ditemukan</div>`
+    :filtered.slice(0,150).map(l=>{
+      const d=new Date(l.ts);
+      const dt=`${d.toLocaleDateString('id-ID')} ${d.toLocaleTimeString('id-ID',{hour:'2-digit',minute:'2-digit'})}`;
+      const isPayLog=l.action&&(l.action.includes('💰')||l.action.includes('🗑️ Hapus bayar')||l.action.includes('🆓'));
+      return `<div class="log-item" style="${isPayLog?'border-left:2px solid #5bcea622':'border-left:2px solid #1e2231'}">
+        <div class="log-time">${dt} · ${l.user||'—'}</div>
+        <div class="log-action">${l.action}</div>
+        ${l.detail?`<div class="log-detail">${l.detail}</div>`:''}
+      </div>`;
+    }).join('');
+
+  return `<div style="margin-bottom:10px">
+    <input class="search-box" style="margin-bottom:8px" placeholder="🔍 Cari nama / aksi..." value="${logSearch}" oninput="window._logSearch=this.value;render()"/>
+    <div style="display:flex;gap:6px">
+      <select class="cs" style="flex:1" onchange="window._logYear=this.value;render()">${yrOpts}</select>
+      <select class="cs" style="flex:1" onchange="window._logMonth=this.value===''?'':+this.value;render()">${moOpts}</select>
+      <button onclick="window._logSearch='';window._logYear='';window._logMonth='';render()" style="background:#1e2231;border:none;color:#555;padding:6px 10px;border-radius:7px;cursor:pointer;font-size:11px">Reset</button>
+    </div>
+  </div>
+  <div style="font-size:10px;color:#555;margin-bottom:10px;letter-spacing:.06em">${filtered.length} dari ${logs.length} LOG · Edit non-bayar dihapus otomatis 7 hari</div>
+  ${logItems}`;
 }
 
 // ══════════════════════════════════════════
 // MEMBERS VIEW
 // ══════════════════════════════════════════
 function renderMembers(){
-  const zone=newMemberZone; // reuse newMemberZone as "active member view zone"
+  const zone=newMemberZone;
   const c=zone==='KRS'?'#3a7bd5':'#e05c3a';
-  const mems=zone==='KRS'?appData.krsMembers:appData.slkMembers;
+  let mems=zone==='KRS'?[...appData.krsMembers]:[...appData.slkMembers];
+
+  // Sort
+  const sortMode=window._memberSort||'name-asc';
+  if(sortMode==='name-asc') mems.sort((a,b)=>a.localeCompare(b));
+  else if(sortMode==='name-desc') mems.sort((a,b)=>b.localeCompare(a));
+  else if(sortMode==='id-asc') mems.sort((a,b)=>{
+    const ia=appData.memberInfo?.[zone+'__'+a]?.id||'zzz';
+    const ib=appData.memberInfo?.[zone+'__'+b]?.id||'zzz';
+    return ia.localeCompare(ib,undefined,{numeric:true});
+  });
+  else if(sortMode==='id-desc') mems.sort((a,b)=>{
+    const ia=appData.memberInfo?.[zone+'__'+a]?.id||'';
+    const ib=appData.memberInfo?.[zone+'__'+b]?.id||'';
+    return ib.localeCompare(ia,undefined,{numeric:true});
+  });
+  else if(sortMode==='ip-asc') mems.sort((a,b)=>{
+    const ia=appData.memberInfo?.[zone+'__'+a]?.ip||'zzz';
+    const ib=appData.memberInfo?.[zone+'__'+b]?.ip||'zzz';
+    return ia.localeCompare(ib,undefined,{numeric:true});
+  });
+  else if(sortMode==='ip-desc') mems.sort((a,b)=>{
+    const ia=appData.memberInfo?.[zone+'__'+a]?.ip||'';
+    const ib=appData.memberInfo?.[zone+'__'+b]?.ip||'';
+    return ib.localeCompare(ia,undefined,{numeric:true});
+  });
+
   const filtered=mems.filter(m=>m.toLowerCase().includes(search.toLowerCase()));
 
   const rows=filtered.map((name,i)=>{
     const info=appData.memberInfo?.[zone+'__'+name]||{};
+    const fmKey=zone+'__'+name;
+    const fm=appData.freeMembers?.[fmKey];
+    const isFreeNow=fm&&fm.active;
     const idBadge=info.id
       ?`<span class="mem-id-badge">${info.id}</span>`
       :'<span class="mem-id-badge" style="color:#333;border-color:#1e2231">—</span>';
-    const editBtn=!membersLocked
-      ?`<button onclick="openEditMember('${zone}','${name.replace(/'/g,"\'")}')" style="background:none;border:1px solid #1e3a5f;color:#3a7bd5;padding:4px 8px;border-radius:5px;cursor:pointer;font-size:10px;flex-shrink:0">✏️</button>`:'';
-    const delBtn=!membersLocked
-      ?`<button class="delbtn" onclick="deleteMember('${zone}','${name.replace(/'/g,"\'")}')" style="flex-shrink:0">✕</button>`:'';
+    const freeBadge=isFreeNow?`<span style="background:#0a2a18;border:1px solid #5bcea633;color:#5bcea6;font-size:9px;padding:2px 6px;border-radius:4px;flex-shrink:0">🆓 Free</span>`:'';
+    const editBtn=!membersLocked?`<button onclick="openEditMember('${zone}','${name.replace(/'/g,"\'")}') " style="background:none;border:1px solid #1e3a5f;color:#3a7bd5;padding:4px 8px;border-radius:5px;cursor:pointer;font-size:10px;flex-shrink:0">✏️</button>`:'';
+    const freeBtn=!membersLocked?`<button onclick="openFreeModal('${zone}','${name.replace(/'/g,"\'")}') " style="background:${isFreeNow?'#0a2a18':'none'};border:1px solid ${isFreeNow?'#5bcea6':'#1e3a5f'};color:${isFreeNow?'#5bcea6':'#444'};padding:4px 8px;border-radius:5px;cursor:pointer;font-size:10px;flex-shrink:0">🆓</button>`:'';
+    const delBtn=!membersLocked?`<button class="delbtn" onclick="deleteMember('${zone}','${name.replace(/'/g,"\'")}') " style="flex-shrink:0">✕</button>`:'';
     return `<div class="mem-row">
       <span class="mem-num">${i+1}.</span>
       ${idBadge}
       <span class="mem-name-txt">${name}</span>
+      ${freeBadge}
       ${info.ip?`<a href="${info.ip.startsWith('http')?info.ip:'http://'+info.ip}" target="_blank" rel="noopener" style="color:#3a7bd5;font-size:11px;text-decoration:none;border:1px solid #1e3a5f;padding:2px 7px;border-radius:4px;flex-shrink:0" onclick="event.stopPropagation()">🔗 ${info.ip}</a>`:''}
-      ${editBtn}${delBtn}
+      ${freeBtn}${editBtn}${delBtn}
     </div>`;
   }).join('');
 
   const lockBtn=`<button onclick="toggleMembersLock()" style="background:${membersLocked?'#0d2b1f':'#1f0d0d'};border:1px solid ${membersLocked?'#5bcea633':'#e05c5c33'};color:${membersLocked?'#5bcea6':'#e05c5c'};padding:7px 16px;border-radius:7px;cursor:pointer;font-size:11px">
     ${membersLocked?'🔒 Terkunci':'🔓 Tidak Terkunci'}</button>`;
 
+  // Sort controls
+  const sortLabels={'name-asc':'Nama A-Z','name-desc':'Nama Z-A','id-asc':'ID ↑','id-desc':'ID ↓','ip-asc':'IP ↑','ip-desc':'IP ↓'};
+  const sortBtns=Object.entries(sortLabels).map(([k,l])=>`<button onclick="window._memberSort='${k}';render()" style="padding:4px 9px;border-radius:10px;border:none;cursor:pointer;font-size:10px;background:${sortMode===k?'#3a7bd5':'#1e2231'};color:${sortMode===k?'#fff':'#555'}">${l}</button>`).join('');
+
   const addForm=membersLocked?'':`<div class="add-form">
     <div class="af-title">TAMBAH MEMBER BARU KE ${zone}</div>
     <div class="af-grid">
+<div class="af-grid">
       <div><div style="font-size:10px;color:#555;margin-bottom:4px">NAMA</div>
         <input class="af-input" id="af-name" placeholder="Nama member" onkeydown="if(event.key==='Enter')addMember()"/></div>
       <div><div style="font-size:10px;color:#555;margin-bottom:4px">ID PELANGGAN</div>
@@ -1174,6 +1358,7 @@ function renderMembers(){
     ${lockBtn}
   </div>
   ${addForm}
+  <div style="display:flex;gap:4px;flex-wrap:wrap;margin-bottom:8px">${sortBtns}</div>
   <input class="search-box" placeholder="🔍 Cari nama di ${zone}..." value="${search}" oninput="search=this.value;render()"/>
   <div style="font-size:10px;color:#444;margin-bottom:8px">${filtered.length} member${search?' ditemukan':''} · ${zone}</div>
   ${rows||'<div style="text-align:center;padding:20px;color:#555;font-size:12px">Tidak ada member</div>'}`;
@@ -1225,11 +1410,55 @@ function toggleCard(name){
   }
 }
 
+// Entry month state per card
+window._entryYear={};
+window._entryMonth={};
+
+function setEntryMonth(name,val,type){
+  if(type==='year') window._entryYear[name]=+val;
+  else window._entryMonth[name]=+val;
+  render();
+}
+
+function saveEntryPay(name,val){
+  const ey=window._entryYear?.[name]??selYear;
+  const em=window._entryMonth?.[name]??selMonth;
+  if(!appData.payments) appData.payments={};
+  const amt=+val;
+  const old=getPay(activeZone,name,ey,em);
+  appData.payments[getKey(activeZone,name,ey,em)]=amt;
+  saveDB({action:`💰 Bayar ${activeZone} - ${name}`,detail:`${MONTHS[em]} ${ey}: ${old??'—'} → Rp ${(amt*1000).toLocaleString('id-ID')}`});
+  showToast(`${name} ${MONTHS[em]} ${ey} → ${rp(amt)}`);
+  render();
+}
+
+function clearEntryPay(name){
+  const ey=window._entryYear?.[name]??selYear;
+  const em=window._entryMonth?.[name]??selMonth;
+  const k=getKey(activeZone,name,ey,em);
+  const old=getPay(activeZone,name,ey,em);
+  delete appData.payments[k];
+  saveDB({action:`🗑️ Hapus bayar ${activeZone} - ${name}`,detail:`${MONTHS[em]} ${ey}: Rp ${(old||0)*1000} → dihapus`});
+  showToast(`${name} ${MONTHS[em]} ${ey} dihapus`,'err');
+  render();
+}
+
+function quickEntryPay(name,amt){
+  const ey=window._entryYear?.[name]??selYear;
+  const em=window._entryMonth?.[name]??selMonth;
+  if(!appData.payments) appData.payments={};
+  const old=getPay(activeZone,name,ey,em);
+  appData.payments[getKey(activeZone,name,ey,em)]=amt;
+  saveDB({action:`💰 Quick Pay ${activeZone} - ${name}`,detail:`${MONTHS[em]} ${ey}: ${old??'—'} → Rp ${(amt*1000).toLocaleString('id-ID')}`});
+  showToast(`${name} ${MONTHS[em]} ${ey} → ${rp(amt)}`);
+  expandedCard=null; render();
+}
+
 function quickPay(name,amt){
   if(!appData.payments) appData.payments={};
   const old=getPay(activeZone,name,selYear,selMonth);
   appData.payments[getKey(activeZone,name,selYear,selMonth)]=amt;
-  saveDB({action:`💰 Quick Pay ${activeZone} - ${name}`,detail:`${MONTHS[selMonth]} ${selYear}: ${old??'—'} → Rp ${amt.toLocaleString('id-ID')}`});
+  saveDB({action:`💰 Quick Pay ${activeZone} - ${name}`,detail:`${MONTHS[selMonth]} ${selYear}: ${old??'—'} → Rp ${(amt*1000).toLocaleString('id-ID')}`});
   showToast(`${name} → ${rp(amt)}`);
   expandedCard=null; render();
 }
@@ -1238,9 +1467,71 @@ function clearPay(name){
   const k=getKey(activeZone,name,selYear,selMonth);
   const old=getPay(activeZone,name,selYear,selMonth);
   delete appData.payments[k];
-  saveDB({action:`🗑️ Hapus bayar ${activeZone} - ${name}`,detail:`${MONTHS[selMonth]} ${selYear}: Rp ${(old||0).toLocaleString('id-ID')} → dihapus`});
+  saveDB({action:`🗑️ Hapus bayar ${activeZone} - ${name}`,detail:`${MONTHS[selMonth]} ${selYear}: Rp ${(old||0)*1000} → dihapus`});
   showToast(`${name} dihapus`,'err');
   render();
+}
+
+// ── FREE MEMBER FUNCTIONS ──
+function openFreeModal(zone,name){
+  const key=zone+'__'+name;
+  const fm=appData.freeMembers?.[key];
+  document.getElementById('fm-zone').value=zone;
+  document.getElementById('fm-name').value=name;
+  document.getElementById('fm-title').textContent='🆓 Free Member: '+name;
+  // Populate selects
+  const yrOpts=YEARS.map(y=>`<option value="${y}">${y}</option>`).join('');
+  const moOpts=MONTHS.map((m,i)=>`<option value="${i}">${m}</option>`).join('');
+  ['fm-from-year','fm-to-year'].forEach(id=>{document.getElementById(id).innerHTML=yrOpts;});
+  ['fm-from-month','fm-to-month'].forEach(id=>{document.getElementById(id).innerHTML=moOpts;});
+  // Set values
+  const now=new Date();
+  document.getElementById('fm-from-year').value=fm?.fromYear??now.getFullYear();
+  document.getElementById('fm-from-month').value=fm?.fromMonth??now.getMonth();
+  document.getElementById('fm-to-year').value=fm?.toYear??now.getFullYear();
+  document.getElementById('fm-to-month').value=fm?.toMonth??11;
+  document.getElementById('fm-no-end').checked=fm?(fm.toYear===undefined):false;
+  toggleFmEnd();
+  document.getElementById('free-modal').style.display='flex';
+}
+
+function toggleFmEnd(){
+  const noEnd=document.getElementById('fm-no-end').checked;
+  document.getElementById('fm-end-row').style.display=noEnd?'none':'flex';
+}
+
+function saveFreeModal(){
+  const zone=document.getElementById('fm-zone').value;
+  const name=document.getElementById('fm-name').value;
+  const fromYear=+document.getElementById('fm-from-year').value;
+  const fromMonth=+document.getElementById('fm-from-month').value;
+  const noEnd=document.getElementById('fm-no-end').checked;
+  const toYear=noEnd?undefined:+document.getElementById('fm-to-year').value;
+  const toMonth=noEnd?undefined:+document.getElementById('fm-to-month').value;
+  if(!noEnd && (toYear*12+toMonth)<(fromYear*12+fromMonth)){
+    showToast('Tanggal selesai harus setelah tanggal mulai','err'); return;
+  }
+  if(!appData.freeMembers) appData.freeMembers={};
+  const key=zone+'__'+name;
+  appData.freeMembers[key]={active:true,fromYear,fromMonth,toYear,toMonth};
+  saveDB({action:`🆓 Set Free Member ${zone} - ${name}`,detail:`Dari ${MONTHS[fromMonth]} ${fromYear}${noEnd?' (selamanya)':' s/d '+MONTHS[toMonth]+' '+toYear}`});
+  showToast(`${name} dijadikan free member ✅`);
+  closeFreeModal();
+  render();
+}
+
+function removeFreeModal(zone,name){
+  const key=zone+'__'+name;
+  if(!appData.freeMembers?.[key]) return;
+  delete appData.freeMembers[key];
+  saveDB({action:`💳 Kembalikan ke Berbayar ${zone} - ${name}`,detail:`Free member dihapus`});
+  showToast(`${name} dikembalikan ke berbayar`);
+  closeFreeModal();
+  render();
+}
+
+function closeFreeModal(){
+  document.getElementById('free-modal').style.display='none';
 }
 
 function goEntry(name,month){selMonth=month;expandedCard=name;setView('entry');search=name;render();}
