@@ -1790,13 +1790,14 @@ function importData(e){
       }
       // Matikan listener Firebase sementara
       if(dbRef){dbRef.off();dbRef=null;}
-      // Set appData langsung dari file
+      // Set appData langsung dari file - pertahankan freeMembers yang sudah ada
       appData={
         krsMembers: Array.isArray(data.krsMembers)?data.krsMembers:[],
         slkMembers: Array.isArray(data.slkMembers)?data.slkMembers:[],
         payments: (data.payments&&typeof data.payments==='object')?data.payments:{},
         memberInfo: (data.memberInfo&&typeof data.memberInfo==='object')?data.memberInfo:{},
-        activityLog:[]
+        activityLog:[],
+        freeMembers: (data.freeMembers&&typeof data.freeMembers==='object')?data.freeMembers:(appData.freeMembers||{})
       };
       // Render langsung - data sudah tampil
       render();
@@ -1836,7 +1837,8 @@ function importData(e){
             slkMembers:val.slkMembers||[],
             payments:val.payments||{},
             memberInfo:val.memberInfo||{},
-            activityLog:val.activityLog||[]
+            activityLog:val.activityLog||[],
+            freeMembers:val.freeMembers||{}
           };
           render();
         });
@@ -1853,7 +1855,8 @@ function importData(e){
             slkMembers:val.slkMembers||[],
             payments:val.payments||{},
             memberInfo:val.memberInfo||{},
-            activityLog:val.activityLog||[]
+            activityLog:val.activityLog||[],
+            freeMembers:val.freeMembers||{}
           };
           render();
         });
