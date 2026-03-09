@@ -473,6 +473,8 @@ const DEFAULT_SLK=["AFAN","AIDI","AMIN","ANAS","ANGGUN","ANIS","BAY","CLARA","DA
 // ══════════════════════════════════════════
 let currentUser=null, uid=null;
 let appData={krsMembers:[...DEFAULT_KRS],slkMembers:[...DEFAULT_SLK],payments:{},memberInfo:{},activityLog:[],freeMembers:{}};
+let _isSaving=false;
+let _lastSaveTs=0;
 let activeZone="KRS", currentView="entry";
 let selYear=new Date().getFullYear(), selMonth=new Date().getMonth();
 let search="", filterStatus="all", expandedCard=null;
@@ -712,8 +714,6 @@ function initDB(){
   },err=>{setSyncStatus('err');});
 }
 
-let _isSaving=false;
-let _lastSaveTs=0;
 function saveDB(logEntry){
   if(!dbRef) return;
   setSyncStatus('loading');
