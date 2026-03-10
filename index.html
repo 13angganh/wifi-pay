@@ -193,6 +193,29 @@ img{pointer-events:none}
 .modal-action{width:100%;padding:12px;border-radius:8px;border:none;background:var(--zc);color:#fff;font-size:13px;font-weight:600;cursor:pointer;margin-top:8px}
 .modal-action:active{opacity:.8}
 
+/* ── LOCK ── */
+.entry-locked-overlay{position:absolute;inset:0;z-index:10;border-radius:10px;cursor:not-allowed}
+.lock-badge{position:absolute;top:6px;right:6px;font-size:11px;background:#1a1a2e;border:1px solid #3a3a5e;border-radius:4px;padding:2px 6px;color:#555}
+
+/* ── RECYCLE BIN ── */
+.del-card{background:#0e1018;border:1px solid #e05c5c22;border-radius:10px;padding:10px 12px;margin-bottom:8px;display:flex;justify-content:space-between;align-items:center;gap:8px}
+.del-card-name{font-size:13px;color:#888;flex:1}
+.del-card-info{font-size:10px;color:#444}
+.restore-btn{background:#0a2a18;border:1px solid #5bcea655;color:#5bcea6;padding:5px 10px;border-radius:6px;cursor:pointer;font-size:11px;flex-shrink:0}
+
+/* ── OPERASIONAL ── */
+.ops-card{background:#0e1018;border:1px solid #1e2231;border-radius:10px;padding:12px;margin-bottom:8px}
+.ops-row{display:flex;gap:8px;align-items:center;margin-bottom:6px}
+.ops-input{background:#131620;border:1px solid #1e2231;color:#ccc;border-radius:6px;padding:6px 10px;font-size:12px;font-family:inherit}
+.ops-input:focus{outline:none;border-color:#3a7bd5}
+.ops-input.wide{flex:1}
+.ops-input.num{width:110px;text-align:right}
+.ops-result{background:#0a0c12;border:1px solid #1e2231;border-radius:10px;padding:14px;margin-top:10px}
+.ops-result-row{display:flex;justify-content:space-between;align-items:center;padding:6px 0;border-bottom:1px solid #1e2231}
+.ops-result-row:last-child{border-bottom:none}
+.ops-result-lbl{font-size:11px;color:#666}
+.ops-result-val{font-size:13px;font-weight:700}
+
 /* ── TOAST ── */
 #update-banner{position:fixed;top:0;left:0;right:0;z-index:9999;background:linear-gradient(90deg,#1a3a1a,#0d2b0d);border-bottom:1px solid #5bcea655;padding:10px 16px;display:none;align-items:center;justify-content:space-between;gap:10px}
 #update-banner.show{display:flex}
@@ -324,7 +347,8 @@ img{pointer-events:none}
       <button class="hbtn" onclick="showExportModal()">⬇ Export</button>
       <button class="hbtn" onclick="document.getElementById('imp-file').click()">⬆ Import</button>
       <input type="file" id="imp-file" accept=".json" onchange="importData(event)" style="display:none"/>
-      <button class="hbtn" onclick="showAccountModal()" style="margin-left:auto">👤</button>
+      <button class="hbtn" id="global-lock-btn" onclick="toggleGlobalLock()">🔓</button>
+      <button class="hbtn" onclick="showAccountModal()">👤</button>
     </div>
   </div>
   <div id="content"></div>
@@ -335,6 +359,7 @@ img{pointer-events:none}
     <button class="nb" data-v="grafik" onclick="setView('grafik')"><span class="ni">📈</span>Grafik</button>
     <button class="nb" data-v="log" onclick="setView('log')"><span class="ni">🗂️</span>Log</button>
     <button class="nb" data-v="members" onclick="setView('members')"><span class="ni">👥</span>Member</button>
+    <button class="nb" data-v="operasional" onclick="setView('operasional')"><span class="ni">💼</span>Ops</button>
   </div>
 </div>
 
@@ -472,9 +497,11 @@ const DEFAULT_SLK=["AFAN","AIDI","AMIN","ANAS","ANGGUN","ANIS","BAY","CLARA","DA
 // STATE
 // ══════════════════════════════════════════
 let currentUser=null, uid=null;
-let appData={krsMembers:[...DEFAULT_KRS],slkMembers:[...DEFAULT_SLK],payments:{},memberInfo:{},activityLog:[],freeMembers:{}};
+let appData={krsMembers:[...DEFAULT_KRS],slkMembers:[...DEFAULT_SLK],payments:{},memberInfo:{},activityLog:[],freeMembers:{},deletedMembers:{},operasional:{}};
 let _isSaving=false;
 let _lastSaveTs=0;
+let globalLocked=localStorage.getItem('wp_global_locked')==='1';
+let lockedEntries=JSON.parse(localStorage.getItem('wp_locked_entries')||'{}');
 let activeZone="KRS", currentView="entry";
 let selYear=new Date().getFullYear(), selMonth=new Date().getMonth();
 let search="", filterStatus="all", expandedCard=null;
@@ -483,7 +510,7 @@ let shareType="monthly", shareFmt="pdf", expFmt="json";
 let dbRef=null, deferredPrompt=null;
 let chartInstances={};
 let pendingEdits={};
-let membersLocked=false;
+let membersLocked=localStorage.getItem('wp_members_locked')==='1';
 
 // ══════════════════════════════════════════
 // AUTH
@@ -690,7 +717,6 @@ function initDB(){
       // Merge: pakai data Firebase tapi pertahankan freeMembers lokal jika Firebase belum update
       const remoteFree = val.freeMembers||{};
       const localFree = appData.freeMembers||{};
-      // Gabungkan: local wins (lebih baru), remote sebagai fallback
       const mergedFree = Object.assign({}, remoteFree, localFree);
       appData={
         krsMembers: val.krsMembers||[],
@@ -698,7 +724,9 @@ function initDB(){
         payments: val.payments||{},
         memberInfo: val.memberInfo||{},
         activityLog: val.activityLog||[],
-        freeMembers: mergedFree
+        freeMembers: mergedFree,
+        deletedMembers: val.deletedMembers||{},
+        operasional: val.operasional||{}
       };
       // Auto-hapus log edit non-bayar > 7 hari
       cleanOldEditLogs();
@@ -707,7 +735,7 @@ function initDB(){
       appData={
         krsMembers:[...DEFAULT_KRS],
         slkMembers:[...DEFAULT_SLK],
-        payments:{},memberInfo:{},activityLog:[],freeMembers:{}
+        payments:{},memberInfo:{},activityLog:[],freeMembers:{},deletedMembers:{},operasional:{}
       };
     }
     // Jika val ada tapi krsMembers belum (masih proses upload) - jangan overwrite
@@ -881,7 +909,11 @@ function render(){
   else if(currentView==='tunggakan') c.innerHTML=renderTunggakan();
   else if(currentView==='grafik') c.innerHTML=renderGrafik();
   else if(currentView==='log') c.innerHTML=renderLog();
+  else if(currentView==='operasional') c.innerHTML=renderOperasional();
   else c.innerHTML=renderMembers();
+  // Update global lock button icon
+  const glb=document.getElementById('global-lock-btn');
+  if(glb) glb.textContent=globalLocked?'🔒':'🔓';
   attachEvents();
   if(currentView==='grafik') setTimeout(initCharts,50);
 }
@@ -939,13 +971,16 @@ function renderEntry(){
         <div class="qrow">${QUICK.map(a=>`<button class="qb" onclick="quickEntryPay('${name}',${a})">${a}</button>`).join('')}</div>
       </div>`}
     </div>`:'';
+    const entLocked=globalLocked||(lockedEntries[activeZone+'__'+name]===true);
+    const lockEntryBtn=`<button onclick="event.stopPropagation();toggleEntryLock('${activeZone}','${name.replace(/'/g,"\'")}') " style="background:none;border:none;cursor:pointer;font-size:13px;padding:2px 4px;color:${entLocked?'#5bcea6':'#333'};flex-shrink:0" title="${entLocked?'Terkunci':'Tidak terkunci'}">${entLocked?'🔒':'🔓'}</button>`;
     return `<div class="mcard${exp?' expanded':''}" id="card-${name.replace(/\s/g,'_')}">
       <div class="mc-top" onclick="toggleCard('${name}')">
         ${idEl}<span class="mc-num">${i+1}</span>
         <span class="mc-name">${name}</span>
         ${val!==null?`<span style="font-size:11px;color:#5bcea6">${val.toLocaleString('id-ID')}</span>`:''}
         ${tagEl}
-        <span style="color:#333;font-size:12px;margin-left:4px">${exp?'▲':'▼'}</span>
+        ${lockEntryBtn}
+        <span style="color:#333;font-size:12px;margin-left:2px">${exp?'▲':'▼'}</span>
       </div>${body}</div>`;
   }).join('');
   return `${banner}
@@ -1164,6 +1199,42 @@ function renderGrafik(){
   const yNonZero=yData.filter(v=>v>0);
   const yAvg=yNonZero.length?Math.round(yNonZero.reduce((a,b)=>a+b,0)/yNonZero.length):0;
 
+  // Hitung % perubahan bulanan (vs bulan sebelumnya dalam tahun ini)
+  const mPct=mData.map((v,i)=>{
+    if(i===0){
+      // Januari: bandingkan dengan Desember tahun lalu
+      const prevYear=selYear-1;
+      let prevVal=0;
+      if(activeZone==='TOTAL') prevVal=getZoneTotal('KRS',prevYear,11)+getZoneTotal('SLK',prevYear,11);
+      else prevVal=grafikMembers().reduce((s,m)=>s+(appData.payments?.[getKey(activeZone,m,prevYear,11)]||0),0);
+      if(!prevVal) return null;
+      return Math.round(((v-prevVal)/prevVal)*100);
+    }
+    const prev=mData[i-1];
+    if(!prev) return null;
+    return Math.round(((v-prev)/prev)*100);
+  });
+  // Hitung % perubahan tahunan
+  const yPct=yData.map((v,i)=>{
+    if(i===0) return null;
+    const prev=yData[i-1];
+    if(!prev) return null;
+    return Math.round(((v-prev)/prev)*100);
+  });
+  const pctBadge=(pct)=>{
+    if(pct===null) return '';
+    const up=pct>=0;
+    return `<span style="font-size:10px;font-weight:600;color:${up?'#5bcea6':'#e05c5c'};margin-left:6px">${up?'▲':'▼'}${Math.abs(pct)}%</span>`;
+  };
+  // Bulan saat ini untuk % bulanan
+  const nowMonth=new Date().getMonth();
+  const curM=selYear===new Date().getFullYear()?mData[nowMonth]:mData[mData.length-1];
+  const curMPct=selYear===new Date().getFullYear()?mPct[nowMonth]:mPct[mData.length-1];
+  // Tahun ini vs tahun lalu
+  const curYi=YEARS.indexOf(selYear);
+  const curYPct=curYi>0?yPct[curYi]:null;
+  const prevYTotal=curYi>0?yData[curYi-1]:0;
+
   return `<div class="ctrl-row" style="justify-content:space-between;align-items:center">
     <select class="cs" onchange="selYear=+this.value;render()">${yrOpts}</select>
     <div style="display:flex;gap:3px;background:#131620;padding:3px;border-radius:20px;border:1px solid #1e2231">
@@ -1175,14 +1246,21 @@ function renderGrafik(){
 
   <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px">
     <div style="background:#131620;border:1px solid #1e2231;border-radius:10px;padding:12px">
-      <div style="font-size:9px;color:#555;letter-spacing:.06em;margin-bottom:4px">TOTAL BULANAN ${selYear}</div>
+      <div style="font-size:9px;color:#555;letter-spacing:.06em;margin-bottom:4px">TOTAL ${selYear}${pctBadge(curYPct)}</div>
       <div style="font-size:15px;font-weight:700;color:${zc}">${rp(mTotal)}</div>
       <div style="font-size:10px;color:#444;margin-top:3px">Avg/bulan: ${rp(mAvg)}</div>
     </div>
     <div style="background:#131620;border:1px solid #1e2231;border-radius:10px;padding:12px">
-      <div style="font-size:9px;color:#555;letter-spacing:.06em;margin-bottom:4px">RATA-RATA TAHUNAN</div>
+      <div style="font-size:9px;color:#555;letter-spacing:.06em;margin-bottom:4px">VS TAHUN LALU${pctBadge(curYPct)}</div>
       <div style="font-size:15px;font-weight:700;color:${zc}">${rp(yAvg)}</div>
-      <div style="font-size:10px;color:#444;margin-top:3px">Avg/tahun dari ${yNonZero.length} thn</div>
+      <div style="font-size:10px;color:#444;margin-top:3px">Prev: ${rp(prevYTotal)}</div>
+    </div>
+  </div>
+
+  <div style="background:#131620;border:1px solid #1e2231;border-radius:10px;padding:10px;margin-bottom:8px;overflow-x:auto">
+    <div style="font-size:9px;color:#555;letter-spacing:.06em;margin-bottom:8px">% PERUBAHAN BULANAN ${selYear} · ${activeZone}</div>
+    <div style="display:flex;gap:4px;min-width:0">
+      ${MONTHS.map((m,i)=>{const pct=mPct[i];const v=mData[i];const badge=pctBadge(pct);return `<div style="flex:1;min-width:38px;text-align:center"><div style="font-size:9px;color:#444;margin-bottom:2px">${m.slice(0,3)}</div><div style="font-size:10px;color:${zc}">${rpShort(v)}</div><div>${badge||'<span style="font-size:9px;color:#333">—</span>'}</div></div>`;}).join('')}
     </div>
   </div>
 
@@ -1291,7 +1369,8 @@ function renderLog(){
 // ══════════════════════════════════════════
 function renderMembers(){
   const zone=newMemberZone;
-  const c=zone==='KRS'?'#3a7bd5':'#e05c3a';
+  const zc=zone==='KRS'?'#3a7bd5':'#e05c3a';
+  const memberTab=window._memberTab||'active';
   let mems=zone==='KRS'?[...appData.krsMembers]:[...appData.slkMembers];
 
   // Sort
@@ -1361,23 +1440,160 @@ function renderMembers(){
       <div style="grid-column:span 2"><div style="font-size:10px;color:#555;margin-bottom:4px">IP / LINK ROUTER</div>
         <input class="af-input" id="af-ip" placeholder="192.168.x.x atau http://..."/></div>
     </div>
-    <button style="width:100%;background:${c};color:#fff;border:none;padding:10px;border-radius:8px;font-size:13px;font-weight:600;cursor:pointer" onclick="addMember()">+ Tambah ke ${zone}</button>
+    <button style="width:100%;background:${zc};color:#fff;border:none;padding:10px;border-radius:8px;font-size:13px;font-weight:600;cursor:pointer" onclick="addMember()">+ Tambah ke ${zone}</button>
   </div>`;
 
-  return `<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
-    <div style="display:flex;gap:4px;background:#131620;padding:3px;border-radius:24px;border:1px solid #1e2231">
-      <button onclick="newMemberZone='KRS';search='';render()" style="padding:7px 22px;border-radius:20px;border:none;cursor:pointer;font-size:12px;font-weight:600;transition:all .2s;background:${zone==='KRS'?'#3a7bd5':'transparent'};color:${zone==='KRS'?'#fff':'#555'}">KRS <span style="opacity:.6;font-size:10px">(${appData.krsMembers.length})</span></button>
-      <button onclick="newMemberZone='SLK';search='';render()" style="padding:7px 22px;border-radius:20px;border:none;cursor:pointer;font-size:12px;font-weight:600;transition:all .2s;background:${zone==='SLK'?'#e05c3a':'transparent'};color:${zone==='SLK'?'#fff':'#555'}">SLK <span style="opacity:.6;font-size:10px">(${appData.slkMembers.length})</span></button>
+  // Recycle bin content for this zone
+  const deletedList=Object.entries(appData.deletedMembers||{}).filter(([k])=>k.startsWith(zone+'__'));
+  const deletedCards=deletedList.length===0
+    ?`<div style="text-align:center;padding:30px;color:#555;font-size:12px">🗑️ Recycle bin kosong</div>`
+    :deletedList.sort((a,b)=>b[1].deletedAt-a[1].deletedAt).map(([k,d])=>{
+      const dt=new Date(d.deletedAt).toLocaleDateString('id-ID');
+      const payCount=Object.keys(d.payments||{}).length;
+      return `<div class="del-card">
+        <div>
+          <div class="del-card-name">🗑️ ${d.name}</div>
+          <div class="del-card-info">Dihapus: ${dt} · ${payCount} data bayar</div>
+        </div>
+        <div style="display:flex;gap:6px;flex-shrink:0">
+          <button class="restore-btn" onclick="restoreMember('${k}')">♻️ Kembalikan</button>
+          <button onclick="permanentDelete('${k}')" style="background:#1f0d0d;border:1px solid #e05c5c55;color:#e05c5c;padding:5px 10px;border-radius:6px;cursor:pointer;font-size:11px">🗑️</button>
+        </div>
+      </div>`;
+    }).join('');
+
+  return \`<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
+    <div style="display:flex;gap:3px;background:#131620;padding:3px;border-radius:24px;border:1px solid #1e2231">
+      <button onclick="newMemberZone='KRS';search='';window._memberTab='active';render()" style="padding:6px 16px;border-radius:20px;border:none;cursor:pointer;font-size:11px;font-weight:600;background:\${zone==='KRS'?'#3a7bd5':'transparent'};color:\${zone==='KRS'?'#fff':'#555'}">KRS <span style="opacity:.6;font-size:10px">(\${appData.krsMembers.length})</span></button>
+      <button onclick="newMemberZone='SLK';search='';window._memberTab='active';render()" style="padding:6px 16px;border-radius:20px;border:none;cursor:pointer;font-size:11px;font-weight:600;background:\${zone==='SLK'?'#e05c3a':'transparent'};color:\${zone==='SLK'?'#fff':'#555'}">SLK <span style="opacity:.6;font-size:10px">(\${appData.slkMembers.length})</span></button>
     </div>
-    ${lockBtn}
+    \${lockBtn}
   </div>
-  ${addForm}
-  <div style="display:flex;gap:4px;flex-wrap:wrap;margin-bottom:8px">${sortBtns}</div>
-  <input class="search-box" placeholder="🔍 Cari nama di ${zone}..." value="${search}" oninput="search=this.value;render()"/>
-  <div style="font-size:10px;color:#444;margin-bottom:8px">${filtered.length} member${search?' ditemukan':''} · ${zone}</div>
-  ${rows||'<div style="text-align:center;padding:20px;color:#555;font-size:12px">Tidak ada member</div>'}`;
+  <div style="display:flex;gap:4px;margin-bottom:10px;background:#0e1018;padding:3px;border-radius:20px;border:1px solid #1e2231">
+    <button onclick="window._memberTab='active';render()" style="flex:1;padding:6px;border-radius:16px;border:none;cursor:pointer;font-size:11px;font-weight:600;background:\${memberTab==='active'?zc:'transparent'};color:\${memberTab==='active'?'#fff':'#555'}">👥 Aktif (\${mems.length})</button>
+    <button onclick="window._memberTab='deleted';render()" style="flex:1;padding:6px;border-radius:16px;border:none;cursor:pointer;font-size:11px;font-weight:600;background:\${memberTab==='deleted'?'#e05c3a':'transparent'};color:\${memberTab==='deleted'?'#fff':'#555'}">🗑️ Terhapus (\${deletedList.length})</button>
+  </div>
+  \${memberTab==='deleted'?deletedCards:\`
+  \${addForm}
+  <div style="display:flex;gap:4px;flex-wrap:wrap;margin-bottom:8px">\${sortBtns}</div>
+  <input class="search-box" placeholder="🔍 Cari nama di \${zone}..." value="\${search}" oninput="search=this.value;render()"/>
+  <div style="font-size:10px;color:#444;margin-bottom:8px">\${filtered.length} member\${search?' ditemukan':''} · \${zone}</div>
+  \${rows||'<div style="text-align:center;padding:20px;color:#555;font-size:12px">Tidak ada member</div>'}
+  \`}
+\`;
 }
 
+
+// ══════════════════════════════════════════
+// OPERASIONAL VIEW
+// ══════════════════════════════════════════
+function renderOperasional(){
+  const now=new Date();
+  const opsYear=window._opsYear??now.getFullYear();
+  const opsMonth=window._opsMonth??now.getMonth();
+  // Min date: Jan 2026
+  const minYear=2026; const minMonth=0;
+
+  const yrOpts=YEARS.filter(y=>y>=2026).map(y=>`<option value="${y}"${y===opsYear?' selected':''}>${y}</option>`).join('');
+  const moOpts=MONTHS.map((m,i)=>{
+    const disabled=(opsYear===minYear&&i<minMonth);
+    return `<option value="${i}"${i===opsMonth?' selected':''}${disabled?' disabled':''}>${m}</option>`;
+  }).join('');
+
+  // Pendapatan kotor dari KRS + SLK bulan ini
+  const krsTotal=getZoneTotal('KRS',opsYear,opsMonth);
+  const slkTotal=getZoneTotal('SLK',opsYear,opsMonth);
+  const grossIncome=krsTotal+slkTotal;
+
+  // Load data operasional bulan ini
+  const opsKey=`${opsYear}_${opsMonth}`;
+  const opsData=appData.operasional?.[opsKey]||{items:[]};
+  const items=opsData.items||[];
+  const totalOps=items.reduce((s,it)=>s+(+it.nominal||0),0);
+  const netIncome=grossIncome-totalOps;
+
+  const itemRows=items.map((it,i)=>`
+    <div class="ops-row" style="align-items:stretch">
+      <input class="ops-input wide" placeholder="Keterangan (listrik, internet...)" value="${it.label||''}"
+        onchange="updateOpsItem(${i},'label',this.value)"/>
+      <input class="ops-input num" type="number" inputmode="numeric" placeholder="0"
+        value="${it.nominal||''}" onchange="updateOpsItem(${i},'nominal',this.value)"/>
+      <button onclick="deleteOpsItem(${i})" style="background:#1f0d0d;border:1px solid #e05c5c55;color:#e05c5c;padding:6px 10px;border-radius:6px;cursor:pointer;font-size:12px;flex-shrink:0">✕</button>
+    </div>`).join('');
+
+  return `<div class="ctrl-row" style="margin-bottom:10px">
+    <select class="cs" onchange="setOpsMonth(this.value,'year')">${yrOpts}</select>
+    <select class="cs" onchange="setOpsMonth(this.value,'month')">${moOpts}</select>
+    <span style="font-size:11px;color:#555">${MONTHS[opsMonth]} ${opsYear}</span>
+  </div>
+
+  <div class="ops-card">
+    <div style="font-size:10px;color:#555;letter-spacing:.06em;margin-bottom:10px">PENGELUARAN OPERASIONAL</div>
+    ${itemRows}
+    <button onclick="addOpsItem()" style="width:100%;background:#0a1a2a;border:1px dashed #1e3a5f;color:#3a7bd5;padding:9px;border-radius:8px;cursor:pointer;font-size:12px;margin-top:6px">+ Tambah Item</button>
+  </div>
+
+  <div class="ops-result">
+    <div class="ops-result-row">
+      <span class="ops-result-lbl">📥 Pendapatan KRS</span>
+      <span class="ops-result-val" style="color:#3a7bd5">${rp(krsTotal)}</span>
+    </div>
+    <div class="ops-result-row">
+      <span class="ops-result-lbl">📥 Pendapatan SLK</span>
+      <span class="ops-result-val" style="color:#e05c3a">${rp(slkTotal)}</span>
+    </div>
+    <div class="ops-result-row" style="border-top:2px solid #1e2231;margin-top:4px">
+      <span class="ops-result-lbl" style="color:#5bcea6">💰 Pendapatan Kotor</span>
+      <span class="ops-result-val" style="color:#5bcea6;font-size:15px">${rp(grossIncome)}</span>
+    </div>
+    <div class="ops-result-row">
+      <span class="ops-result-lbl" style="color:#e05c5c">💸 Total Pengeluaran</span>
+      <span class="ops-result-val" style="color:#e05c5c">${rp(totalOps)}</span>
+    </div>
+    <div class="ops-result-row" style="background:#0a2010;border-radius:8px;padding:10px;margin-top:6px;border:1px solid #5bcea633">
+      <span class="ops-result-lbl" style="color:#5bcea6;font-size:13px;font-weight:700">✅ PENDAPATAN BERSIH</span>
+      <span class="ops-result-val" style="color:${netIncome>=0?'#5bcea6':'#e05c5c'};font-size:17px">${rp(netIncome)}</span>
+    </div>
+  </div>`;
+}
+
+function setOpsMonth(val,type){
+  if(type==='year') window._opsYear=+val;
+  else window._opsMonth=+val;
+  // Pastikan tidak bisa ke sebelum Jan 2026
+  if((window._opsYear||2026)<2026){window._opsYear=2026;window._opsMonth=0;}
+  if(window._opsYear===2026 && (window._opsMonth||0)<0){window._opsMonth=0;}
+  render();
+}
+
+function getOpsKey(){
+  const y=window._opsYear??new Date().getFullYear();
+  const m=window._opsMonth??new Date().getMonth();
+  return `${y}_${m}`;
+}
+
+function addOpsItem(){
+  const k=getOpsKey();
+  if(!appData.operasional) appData.operasional={};
+  if(!appData.operasional[k]) appData.operasional[k]={items:[]};
+  appData.operasional[k].items.push({label:'',nominal:0});
+  render();
+}
+
+function updateOpsItem(idx,field,val){
+  const k=getOpsKey();
+  if(!appData.operasional?.[k]?.items) return;
+  appData.operasional[k].items[idx][field]=field==='nominal'?(+val||0):val;
+  saveDB({action:`💼 Update operasional`,detail:`${MONTHS[window._opsMonth??new Date().getMonth()]} ${window._opsYear??new Date().getFullYear()}`});
+}
+
+function deleteOpsItem(idx){
+  const k=getOpsKey();
+  if(!appData.operasional?.[k]?.items) return;
+  appData.operasional[k].items.splice(idx,1);
+  saveDB({action:`🗑️ Hapus item operasional`,detail:`${MONTHS[window._opsMonth??new Date().getMonth()]} ${window._opsYear??new Date().getFullYear()}`});
+  render();
+}
 
 // ══════════════════════════════════════════
 // EVENTS & ACTIONS
@@ -1435,6 +1651,7 @@ function setEntryMonth(name,val,type){
 }
 
 function saveEntryPay(name,val){
+  if(globalLocked||(lockedEntries[activeZone+'__'+name]===true)){showToast('Data terkunci! Unlock dulu','err');return;}
   const ey=window._entryYear?.[name]??selYear;
   const em=window._entryMonth?.[name]??selMonth;
   if(!appData.payments) appData.payments={};
@@ -1447,6 +1664,7 @@ function saveEntryPay(name,val){
 }
 
 function clearEntryPay(name){
+  if(globalLocked||(lockedEntries[activeZone+'__'+name]===true)){showToast('Data terkunci! Unlock dulu','err');return;}
   const ey=window._entryYear?.[name]??selYear;
   const em=window._entryMonth?.[name]??selMonth;
   const k=getKey(activeZone,name,ey,em);
@@ -1458,6 +1676,7 @@ function clearEntryPay(name){
 }
 
 function quickEntryPay(name,amt){
+  if(globalLocked||(lockedEntries[activeZone+'__'+name]===true)){showToast('Data terkunci! Unlock dulu','err');return;}
   const ey=window._entryYear?.[name]??selYear;
   const em=window._entryMonth?.[name]??selMonth;
   if(!appData.payments) appData.payments={};
@@ -1572,17 +1791,79 @@ function addMember(){
 
 function deleteMember(zone,name){
   if(membersLocked){showToast('Data terkunci! Unlock dulu','err');return;}
-  if(!confirm(`Hapus ${name} dari ${zone}?`))return;
+  if(globalLocked){showToast('Data global terkunci! Unlock dulu','err');return;}
+  if(!confirm(`Hapus ${name} dari ${zone}? Member masuk Recycle Bin.`))return;
   if(zone==='KRS') appData.krsMembers=appData.krsMembers.filter(m=>m!==name);
   else appData.slkMembers=appData.slkMembers.filter(m=>m!==name);
-  saveDB({action:`🗑️ Hapus member ${zone} - ${name}`});
-  showToast(`${name} dihapus`,'err');
+  // Simpan ke recycle bin
+  if(!appData.deletedMembers) appData.deletedMembers={};
+  const k=zone+'__'+name;
+  appData.deletedMembers[k]={
+    zone, name,
+    deletedAt: Date.now(),
+    payments: Object.fromEntries(
+      Object.entries(appData.payments||{}).filter(([pk])=>pk.startsWith(zone+'__'+name+'__'))
+    ),
+    memberInfo: appData.memberInfo?.[k]||{}
+  };
+  saveDB({action:`🗑️ Hapus member ${zone} - ${name}`,detail:`Masuk recycle bin`});
+  showToast(`${name} dihapus → Recycle Bin`,'err');
   render();
 }
 
 function toggleMembersLock(){
   membersLocked=!membersLocked;
+  localStorage.setItem('wp_members_locked', membersLocked?'1':'0');
   showToast(membersLocked?'🔒 Data member terkunci':'🔓 Data member tidak terkunci', membersLocked?'ok':'err');
+  render();
+}
+
+function toggleGlobalLock(){
+  globalLocked=!globalLocked;
+  localStorage.setItem('wp_global_locked', globalLocked?'1':'0');
+  showToast(globalLocked?'🔒 Semua data entry terkunci':'🔓 Data entry tidak terkunci', globalLocked?'ok':'err');
+  render();
+}
+
+function toggleEntryLock(zone,name){
+  const k=zone+'__'+name;
+  lockedEntries[k]=!lockedEntries[k];
+  localStorage.setItem('wp_locked_entries', JSON.stringify(lockedEntries));
+  showToast(lockedEntries[k]?`🔒 ${name} terkunci`:`🔓 ${name} tidak terkunci`);
+  render();
+}
+
+function restoreMember(key){
+  const data=appData.deletedMembers?.[key];
+  if(!data){showToast('Data tidak ditemukan','err');return;}
+  const {zone,name,payments:oldPay,memberInfo:oldInfo}=data;
+  const list=zone==='KRS'?appData.krsMembers:appData.slkMembers;
+  if(list.includes(name)){showToast(`${name} sudah ada di daftar aktif!`,'err');return;}
+  list.push(name); list.sort();
+  // Restore payments
+  if(oldPay && Object.keys(oldPay).length){
+    if(!appData.payments) appData.payments={};
+    Object.assign(appData.payments, oldPay);
+  }
+  // Restore memberInfo
+  if(oldInfo && Object.keys(oldInfo).length){
+    if(!appData.memberInfo) appData.memberInfo={};
+    appData.memberInfo[zone+'__'+name]=oldInfo;
+  }
+  // Hapus dari recycle bin
+  delete appData.deletedMembers[key];
+  saveDB({action:`♻️ Restore member ${zone} - ${name}`,detail:`Data payment dikembalikan`});
+  showToast(`✅ ${name} berhasil dikembalikan!`);
+  render();
+}
+
+function permanentDelete(key){
+  const data=appData.deletedMembers?.[key];
+  if(!data)return;
+  if(!confirm(`Hapus permanen ${data.name}? Data tidak bisa dikembalikan!`))return;
+  delete appData.deletedMembers[key];
+  saveDB({action:`💀 Hapus permanen ${data.zone} - ${data.name}`});
+  showToast(`${data.name} dihapus permanen`,'err');
   render();
 }
 
@@ -1803,7 +2084,9 @@ function importData(e){
         payments: (data.payments&&typeof data.payments==='object')?data.payments:{},
         memberInfo: (data.memberInfo&&typeof data.memberInfo==='object')?data.memberInfo:{},
         activityLog:[],
-        freeMembers: (data.freeMembers&&typeof data.freeMembers==='object')?data.freeMembers:(appData.freeMembers||{})
+        freeMembers: (data.freeMembers&&typeof data.freeMembers==='object')?data.freeMembers:(appData.freeMembers||{}),
+        deletedMembers: (data.deletedMembers&&typeof data.deletedMembers==='object')?data.deletedMembers:{},
+        operasional: (data.operasional&&typeof data.operasional==='object')?data.operasional:{}
       };
       // Render langsung - data sudah tampil
       render();
@@ -1844,7 +2127,9 @@ function importData(e){
             payments:val.payments||{},
             memberInfo:val.memberInfo||{},
             activityLog:val.activityLog||[],
-            freeMembers:val.freeMembers||{}
+            freeMembers:val.freeMembers||{},
+            deletedMembers:val.deletedMembers||{},
+            operasional:val.operasional||{}
           };
           render();
         });
@@ -1862,7 +2147,9 @@ function importData(e){
             payments:val.payments||{},
             memberInfo:val.memberInfo||{},
             activityLog:val.activityLog||[],
-            freeMembers:val.freeMembers||{}
+            freeMembers:val.freeMembers||{},
+            deletedMembers:val.deletedMembers||{},
+            operasional:val.operasional||{}
           };
           render();
         });
