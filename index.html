@@ -713,6 +713,8 @@ function initDB(){
   dbRef=db.ref('users/'+uid+'/data');
   dbRef.on('value',snap=>{
     const val=snap.val();
+    // Jangan overwrite saat sedang menyimpan atau baru saja menyimpan (race condition)
+    if(_isSaving || (Date.now()-_lastSaveTs)<1500) return;
     if(val&&(val.krsMembers||val.payments)){
       // Merge: pakai data Firebase tapi pertahankan freeMembers lokal jika Firebase belum update
       const remoteFree = val.freeMembers||{};
@@ -1462,27 +1464,26 @@ function renderMembers(){
       </div>`;
     }).join('');
 
-  return \`<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
+  return `<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
     <div style="display:flex;gap:3px;background:#131620;padding:3px;border-radius:24px;border:1px solid #1e2231">
-      <button onclick="newMemberZone='KRS';search='';window._memberTab='active';render()" style="padding:6px 16px;border-radius:20px;border:none;cursor:pointer;font-size:11px;font-weight:600;background:\${zone==='KRS'?'#3a7bd5':'transparent'};color:\${zone==='KRS'?'#fff':'#555'}">KRS <span style="opacity:.6;font-size:10px">(\${appData.krsMembers.length})</span></button>
-      <button onclick="newMemberZone='SLK';search='';window._memberTab='active';render()" style="padding:6px 16px;border-radius:20px;border:none;cursor:pointer;font-size:11px;font-weight:600;background:\${zone==='SLK'?'#e05c3a':'transparent'};color:\${zone==='SLK'?'#fff':'#555'}">SLK <span style="opacity:.6;font-size:10px">(\${appData.slkMembers.length})</span></button>
+      <button onclick="newMemberZone='KRS';search='';window._memberTab='active';render()" style="padding:6px 16px;border-radius:20px;border:none;cursor:pointer;font-size:11px;font-weight:600;background:${zone==='KRS'?'#3a7bd5':'transparent'};color:${zone==='KRS'?'#fff':'#555'}">KRS <span style="opacity:.6;font-size:10px">(${appData.krsMembers.length})</span></button>
+      <button onclick="newMemberZone='SLK';search='';window._memberTab='active';render()" style="padding:6px 16px;border-radius:20px;border:none;cursor:pointer;font-size:11px;font-weight:600;background:${zone==='SLK'?'#e05c3a':'transparent'};color:${zone==='SLK'?'#fff':'#555'}">SLK <span style="opacity:.6;font-size:10px">(${appData.slkMembers.length})</span></button>
     </div>
-    \${lockBtn}
+    ${lockBtn}
   </div>
   <div style="display:flex;gap:4px;margin-bottom:10px;background:#0e1018;padding:3px;border-radius:20px;border:1px solid #1e2231">
-    <button onclick="window._memberTab='active';render()" style="flex:1;padding:6px;border-radius:16px;border:none;cursor:pointer;font-size:11px;font-weight:600;background:\${memberTab==='active'?zc:'transparent'};color:\${memberTab==='active'?'#fff':'#555'}">👥 Aktif (\${mems.length})</button>
-    <button onclick="window._memberTab='deleted';render()" style="flex:1;padding:6px;border-radius:16px;border:none;cursor:pointer;font-size:11px;font-weight:600;background:\${memberTab==='deleted'?'#e05c3a':'transparent'};color:\${memberTab==='deleted'?'#fff':'#555'}">🗑️ Terhapus (\${deletedList.length})</button>
+    <button onclick="window._memberTab='active';render()" style="flex:1;padding:6px;border-radius:16px;border:none;cursor:pointer;font-size:11px;font-weight:600;background:${memberTab==='active'?zc:'transparent'};color:${memberTab==='active'?'#fff':'#555'}">👥 Aktif (${mems.length})</button>
+    <button onclick="window._memberTab='deleted';render()" style="flex:1;padding:6px;border-radius:16px;border:none;cursor:pointer;font-size:11px;font-weight:600;background:${memberTab==='deleted'?'#e05c3a':'transparent'};color:${memberTab==='deleted'?'#fff':'#555'}">🗑️ Terhapus (${deletedList.length})</button>
   </div>
-  \${memberTab==='deleted'?deletedCards:\`
-  \${addForm}
-  <div style="display:flex;gap:4px;flex-wrap:wrap;margin-bottom:8px">\${sortBtns}</div>
-  <input class="search-box" placeholder="🔍 Cari nama di \${zone}..." value="\${search}" oninput="search=this.value;render()"/>
-  <div style="font-size:10px;color:#444;margin-bottom:8px">\${filtered.length} member\${search?' ditemukan':''} · \${zone}</div>
-  \${rows||'<div style="text-align:center;padding:20px;color:#555;font-size:12px">Tidak ada member</div>'}
-  \`}
-\`;
+  ${memberTab==='deleted'?deletedCards:`
+  ${addForm}
+  <div style="display:flex;gap:4px;flex-wrap:wrap;margin-bottom:8px">${sortBtns}</div>
+  <input class="search-box" placeholder="🔍 Cari nama di ${zone}..." value="${search}" oninput="search=this.value;render()"/>
+  <div style="font-size:10px;color:#444;margin-bottom:8px">${filtered.length} member${search?' ditemukan':''} · ${zone}</div>
+  ${rows||'<div style="text-align:center;padding:20px;color:#555;font-size:12px">Tidak ada member</div>'}
+  `}
+`;
 }
-
 
 // ══════════════════════════════════════════
 // OPERASIONAL VIEW
