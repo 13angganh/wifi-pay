@@ -1259,11 +1259,31 @@ function renderGrafik(){
     </div>
   </div>
 
-  <div style="background:#131620;border:1px solid #1e2231;border-radius:10px;padding:10px;margin-bottom:8px;overflow-x:auto">
-    <div style="font-size:9px;color:#555;letter-spacing:.06em;margin-bottom:8px">% PERUBAHAN BULANAN ${selYear} · ${activeZone}</div>
-    <div style="display:flex;gap:4px;min-width:0">
-      ${MONTHS.map((m,i)=>{const pct=mPct[i];const v=mData[i];const badge=pctBadge(pct);return `<div style="flex:1;min-width:38px;text-align:center"><div style="font-size:9px;color:#444;margin-bottom:2px">${m.slice(0,3)}</div><div style="font-size:10px;color:${zc}">${rpShort(v)}</div><div>${badge||'<span style="font-size:9px;color:#333">—</span>'}</div></div>`;}).join('')}
+  <div style="background:#131620;border:1px solid #1e2231;border-radius:10px;padding:12px;margin-bottom:8px">
+    <div style="font-size:9px;color:#555;letter-spacing:.06em;margin-bottom:10px">% PERUBAHAN BULANAN ${selYear} · ${activeZone}</div>
+    <div style="display:flex;gap:8px;align-items:center;margin-bottom:10px">
+      <select class="cs" style="flex:1" onchange="window._pctMonth=+this.value;render()">
+        ${MONTHS.map((m,i)=>`<option value="${i}"${(window._pctMonth??new Date().getMonth())===i?' selected':''}>${m}</option>`).join('')}
+      </select>
     </div>
+    ${(()=>{
+      const pi=window._pctMonth??new Date().getMonth();
+      const pv=mData[pi]; const pp=mPct[pi];
+      const prevPi=pi===0?11:pi-1;
+      const prevPv=pi===0?(()=>{const py=selYear-1;return activeZone==='TOTAL'?getZoneTotal('KRS',py,11)+getZoneTotal('SLK',py,11):grafikMembers().reduce((s,m)=>s+(appData.payments?.[getKey(activeZone,m,py,11)]||0),0);})():mData[prevPi];
+      const badge=pctBadge(pp);
+      return `<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+        <div style="background:#0e1018;border:1px solid #1e2231;border-radius:8px;padding:10px">
+          <div style="font-size:9px;color:#555;margin-bottom:4px">${MONTHS[pi]} ${selYear}</div>
+          <div style="font-size:15px;font-weight:700;color:${zc}">${rp(pv)}</div>
+        </div>
+        <div style="background:#0e1018;border:1px solid #1e2231;border-radius:8px;padding:10px">
+          <div style="font-size:9px;color:#555;margin-bottom:4px">VS ${pi===0?'Des '+(selYear-1):MONTHS[prevPi]}</div>
+          <div style="font-size:13px;font-weight:700;color:#ccc">${rp(prevPv)}</div>
+          <div style="margin-top:4px">${badge||'<span style="font-size:11px;color:#555">— Tidak ada data</span>'}</div>
+        </div>
+      </div>`;
+    })()}
   </div>
 
   <div class="chart-box">
@@ -1414,13 +1434,17 @@ function renderMembers(){
     const editBtn=!membersLocked?`<button onclick="openEditMember('${zone}','${name.replace(/'/g,"\'")}') " style="background:none;border:1px solid #1e3a5f;color:#3a7bd5;padding:4px 8px;border-radius:5px;cursor:pointer;font-size:10px;flex-shrink:0">✏️</button>`:'';
     const freeBtn=!membersLocked?`<button onclick="openFreeModal('${zone}','${name.replace(/'/g,"\'")}') " style="background:${isFreeNow?'#0a2a18':'none'};border:1px solid ${isFreeNow?'#5bcea6':'#1e3a5f'};color:${isFreeNow?'#5bcea6':'#444'};padding:4px 8px;border-radius:5px;cursor:pointer;font-size:10px;flex-shrink:0">🆓</button>`:'';
     const delBtn=!membersLocked?`<button class="delbtn" onclick="deleteMember('${zone}','${name.replace(/'/g,"\'")}') " style="flex-shrink:0">✕</button>`:'';
-    return `<div class="mem-row">
-      <span class="mem-num">${i+1}.</span>
-      ${idBadge}
-      <span class="mem-name-txt">${name}</span>
-      ${freeBadge}
-      ${info.ip?`<a href="${info.ip.startsWith('http')?info.ip:'http://'+info.ip}" target="_blank" rel="noopener" style="color:#3a7bd5;font-size:11px;text-decoration:none;border:1px solid #1e3a5f;padding:2px 7px;border-radius:4px;flex-shrink:0" onclick="event.stopPropagation()">🔗 ${info.ip}</a>`:''}
-      ${freeBtn}${editBtn}${delBtn}
+    const ipLink=info.ip?`<a href="${info.ip.startsWith('http')?info.ip:'http://'+info.ip}" target="_blank" rel="noopener" style="color:#3a7bd5;font-size:10px;text-decoration:none;border:1px solid #1e3a5f;padding:2px 6px;border-radius:4px;flex-shrink:0" onclick="event.stopPropagation()">🔗 IP</a>`:'';
+    const hasActions=!membersLocked;
+    return `<div class="mem-row" style="flex-direction:column;align-items:stretch;gap:5px">
+      <div style="display:flex;align-items:center;gap:6px">
+        <span class="mem-num">${i+1}.</span>
+        ${idBadge}
+        <span class="mem-name-txt">${name}</span>
+        ${freeBadge}
+        ${ipLink}
+      </div>
+      ${hasActions?`<div style="display:flex;gap:5px;justify-content:flex-end">${freeBtn}${editBtn}${delBtn}</div>`:''}
     </div>`;
   }).join('');
 
