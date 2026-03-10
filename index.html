@@ -485,7 +485,7 @@ const db = firebase.database();
 const MONTHS=["Jan","Feb","Mar","Apr","Mei","Jun","Jul","Agt","Sep","Okt","Nov","Des"];
 const YEARS=[2023,2024,2025,2026,2027,2028];
 const QUICK=[50,80,90,100,150,200];
-function fbKey(s){return s.replace(/[.#$\[\]/]/g,'-');}  // Sanitize Firebase key
+function fbKey(s){return s.replace(/\./g,'-').replace(/#/g,'-').replace(/\$/g,'-').replace(/\[/g,'-').replace(/]/g,'-').replace(/\//g,'-');}  // Sanitize Firebase key
 function enc(s){try{return btoa(unescape(encodeURIComponent(s)));}catch(e){return '';}}
 function dec(s){try{return decodeURIComponent(escape(atob(s)));}catch(e){return '';}}
 function rp(v){return 'Rp '+(v*1000).toLocaleString('id-ID');}
@@ -1434,7 +1434,6 @@ function renderMembers(){
   const addForm=membersLocked?'':`<div class="add-form">
     <div class="af-title">TAMBAH MEMBER BARU KE ${zone}</div>
     <div class="af-grid">
-<div class="af-grid">
       <div><div style="font-size:10px;color:#555;margin-bottom:4px">NAMA</div>
         <input class="af-input" id="af-name" placeholder="Nama member" onkeydown="if(event.key==='Enter')addMember()"/></div>
       <div><div style="font-size:10px;color:#555;margin-bottom:4px">ID PELANGGAN</div>
@@ -2210,7 +2209,6 @@ function doUpdate(){
   });
 }
 function installPWA(){if(!deferredPrompt)return;deferredPrompt.prompt();deferredPrompt.userChoice.then(()=>{deferredPrompt=null;render();});}
-if('serviceWorker' in navigator) window.addEventListener('load',()=>navigator.serviceWorker.register('sw.js').catch(()=>{}));
 
 // Init zone color
 setZoneColor('KRS');
