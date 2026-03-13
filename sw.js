@@ -1,5 +1,5 @@
-const CACHE = "wifipay-v11";
-const ASSETS = ["/", "/index.html", "/manifest.json", "/icon-192.png", "/icon-512.png"];
+const CACHE = "wifipay-v12";
+const ASSETS = ["./", "./index.html", "./manifest.json", "./icon-192.png", "./icon-512.png"];
 
 self.addEventListener("install", e => {
   e.waitUntil(
@@ -17,7 +17,6 @@ self.addEventListener("activate", e => {
       ))
       .then(() => self.clients.claim())
       .then(() => {
-        // Beritahu semua tab yang terbuka bahwa ada update
         self.clients.matchAll().then(clients => {
           clients.forEach(client => client.postMessage({type: "SW_UPDATED"}));
         });
@@ -26,11 +25,14 @@ self.addEventListener("activate", e => {
 });
 
 self.addEventListener("fetch", e => {
-  if (e.request.url.includes("firebase") || e.request.url.includes("googleapis")) {
+  if (e.request.url.includes("firebase") ||
+      e.request.url.includes("googleapis") ||
+      e.request.url.includes("gstatic") ||
+      e.request.url.includes("cdnjs") ||
+      e.request.url.includes("fonts.g")) {
     e.respondWith(fetch(e.request).catch(() => caches.match(e.request)));
     return;
   }
-  // Network first - selalu ambil versi terbaru
   e.respondWith(
     fetch(e.request)
       .then(res => {
@@ -39,11 +41,10 @@ self.addEventListener("fetch", e => {
         caches.open(CACHE).then(c => c.put(e.request, clone));
         return res;
       })
-      .catch(() => caches.match(e.request).then(r => r || caches.match("/index.html")))
+      .catch(() => caches.match(e.request).then(r => r || caches.match("./index.html")))
   );
 });
 
-// Terima perintah skip waiting dari app
 self.addEventListener("message", e => {
   if (e.data && e.data.type === "SKIP_WAITING") self.skipWaiting();
 });

@@ -1,31 +1,24 @@
 {
-  "name": "WiFi Pay - Iuran Bulanan",
+  "name": "WiFi Pay",
   "short_name": "WiFi Pay",
-  "description": "Aplikasi pencatatan iuran WiFi bulanan KRS & SLK",
-  "start_url": "/wifi-pay/",
+  "description": "Sistem Manajemen Iuran WiFi Bulanan",
+  "start_url": "./index.html",
   "display": "standalone",
   "background_color": "#0a0c12",
   "theme_color": "#0a0c12",
-  "orientation": "portrait",
+  "orientation": "portrait-primary",
   "icons": [
     {
-      "src": "icon-192.png",
+      "src": "./icon-192.png",
       "sizes": "192x192",
       "type": "image/png",
       "purpose": "any maskable"
     },
     {
-      "src": "icon-512.png",
+      "src": "./icon-512.png",
       "sizes": "512x512",
       "type": "image/png",
       "purpose": "any maskable"
     }
-  ],
-  "categories": [
-    "finance",
-    "utilities"
-  ],
-  "lang": "id",
-  "scope": "/wifi-pay/",
-  "id": "/wifi-pay/"
+  ]
 }
