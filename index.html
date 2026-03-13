@@ -29,17 +29,32 @@
 <style>
 *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
 html,body{height:100%;overflow:hidden}
-body{font-family:'DM Mono',monospace;background:#0a0c12;color:#ddd8cc}
-:root{--zc:#3a7bd5;--zcdim:#1e2a4033;--zc2:#e05c3a}
+body{font-family:'DM Mono',monospace;background:var(--bg);color:var(--txt)}
+:root{
+  --zc:#3a7bd5;--zcdim:#1e2a4033;--zc2:#e05c3a;
+  /* Dark theme (default) */
+  --bg:#0a0c12;--bg2:#0e1018;--bg3:#131620;--bg4:#181b24;
+  --border:#1e2231;--border2:#181b24;
+  --txt:#ddd8cc;--txt2:#888;--txt3:#555;--txt4:#444;--txt5:#333;
+  --card:#0e1018;--card2:#131620;
+  --scrollbar:#252836;
+}
+body.light{
+  --bg:#f0f2f7;--bg2:#ffffff;--bg3:#f5f7fc;--bg4:#e8eaf0;
+  --border:#d0d4e0;--border2:#e0e3ed;
+  --txt:#1a1d2e;--txt2:#5a6080;--txt3:#7a82a0;--txt4:#9098b8;--txt5:#b0b8d0;
+  --card:#ffffff;--card2:#f5f7fc;
+  --scrollbar:#c8ccd8;
+}
 ::-webkit-scrollbar{width:4px;height:4px}
-::-webkit-scrollbar-track{background:#0e1018}
-::-webkit-scrollbar-thumb{background:#252836;border-radius:3px}
+::-webkit-scrollbar-track{background:var(--bg2)}
+::-webkit-scrollbar-thumb{background:var(--scrollbar);border-radius:3px}
 input,select,button,textarea{font-family:'DM Mono',monospace;outline:none;-webkit-appearance:none;appearance:none}
 select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath fill='%23666' d='M5 6L0 0h10z'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 10px center;padding-right:28px!important}
 img{pointer-events:none}
 
 /* ── SCREENS ── */
-#screen-login{position:fixed;inset:0;background:#0a0c12;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:24px;z-index:200}
+#screen-login{position:fixed;inset:0;background:var(--bg);display:flex;flex-direction:column;align-items:center;justify-content:center;padding:24px;z-index:200}
 #screen-login.hidden{display:none}
 #screen-app{display:flex;flex-direction:column;position:fixed;inset:0;display:none}
 #screen-app.visible{display:flex}
@@ -47,103 +62,103 @@ img{pointer-events:none}
 /* ── LOGIN ── */
 .login-logo{width:72px;height:72px;background:linear-gradient(135deg,#3a7bd5,#2563eb);border-radius:20px;display:flex;align-items:center;justify-content:center;font-size:32px;margin-bottom:20px;box-shadow:0 8px 32px #3a7bd533}
 .login-title{font-family:'Syne',sans-serif;font-size:26px;font-weight:800;letter-spacing:-0.03em;margin-bottom:4px}
-.login-sub{font-size:11px;color:#444;letter-spacing:.1em;margin-bottom:32px}
-.login-box{background:#0e1018;border:1px solid #1e2231;border-radius:14px;padding:24px;width:100%;max-width:360px}
+.login-sub{font-size:11px;color:var(--txt4);letter-spacing:.1em;margin-bottom:32px}
+.login-box{background:var(--card);border:1px solid var(--border);border-radius:14px;padding:24px;width:100%;max-width:360px}
 
-.lf-label{font-size:10px;color:#555;letter-spacing:.07em;margin-bottom:6px}
-.lf-input{width:100%;background:#131620;border:1px solid #1e2231;color:#ddd8cc;padding:10px 14px;border-radius:8px;font-size:14px;margin-bottom:14px;transition:border .2s}
-.lf-input:focus{border-color:#3a7bd5}
+.lf-label{font-size:10px;color:var(--txt3);letter-spacing:.07em;margin-bottom:6px}
+.lf-input{width:100%;background:var(--bg3);border:1px solid var(--border);color:var(--txt);padding:10px 14px;border-radius:8px;font-size:14px;margin-bottom:14px;transition:border .2s}
+.lf-input:focus{border-color:var(--zc)}
 .lf-btn{width:100%;background:#3a7bd5;color:#fff;border:none;padding:12px;border-radius:8px;font-size:14px;font-weight:600;cursor:pointer;transition:opacity .2s;margin-bottom:10px}
 .lf-btn:active{opacity:.8}
-.lf-btn.secondary{background:#131620;color:#888;border:1px solid #1e2231}
+.lf-btn.secondary{background:var(--bg3);color:var(--txt2);border:1px solid var(--border)}
 .lf-err{font-size:11px;color:#e05c5c;text-align:center;min-height:16px;margin-bottom:8px}
-.lf-switch{font-size:11px;color:#555;text-align:center}
+.lf-switch{font-size:11px;color:var(--txt3);text-align:center}
 .lf-switch span{color:#3a7bd5;cursor:pointer}
-.lf-divider{text-align:center;font-size:10px;color:#333;margin:12px 0;position:relative}
-.lf-divider::before{content:'';position:absolute;left:0;top:50%;right:0;height:1px;background:#1e2231}
-.lf-divider span{background:#0e1018;padding:0 10px;position:relative}
+.lf-divider{text-align:center;font-size:10px;color:var(--txt5);margin:12px 0;position:relative}
+.lf-divider::before{content:'';position:absolute;left:0;top:50%;right:0;height:1px;background:var(--border)}
+.lf-divider span{background:var(--card);padding:0 10px;position:relative}
 
 /* ── HEADER ── */
-#header{background:#0e1018;border-bottom:1px solid #181b24;padding:10px 14px;flex-shrink:0;z-index:50}
+#header{background:var(--bg2);border-bottom:1px solid var(--border2);padding:10px 14px;flex-shrink:0;z-index:50}
 .hdr-row1{display:flex;align-items:center;gap:10px;margin-bottom:8px}
 .logo-sm{width:30px;height:30px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:14px;flex-shrink:0;transition:background .3s}
 .app-name{font-family:'Syne',sans-serif;font-weight:800;font-size:14px;letter-spacing:-.02em}
-.app-user{font-size:9px;color:#444;letter-spacing:.06em}
-.zone-sw{display:flex;gap:3px;background:#131620;padding:3px;border-radius:24px;border:1px solid #1e2231;margin-left:auto}
-.zbtn{padding:5px 14px;border-radius:20px;border:none;cursor:pointer;font-size:11px;font-weight:500;transition:all .2s;background:transparent;color:#555}
+.app-user{font-size:9px;color:var(--txt4);letter-spacing:.06em}
+.zone-sw{display:flex;gap:3px;background:var(--bg3);padding:3px;border-radius:24px;border:1px solid var(--border);margin-left:auto}
+.zbtn{padding:5px 14px;border-radius:20px;border:none;cursor:pointer;font-size:11px;font-weight:500;transition:all .2s;background:transparent;color:var(--txt3)}
 .zbtn.krs{background:#3a7bd5;color:#fff}
 .zbtn.slk{background:#e05c3a;color:#fff}
 .hdr-row2{display:flex;gap:6px;align-items:center;flex-wrap:wrap}
-.hbtn{padding:5px 10px;border-radius:6px;border:1px solid #1e2231;background:#131620;color:#777;cursor:pointer;font-size:10px;transition:all .2s;white-space:nowrap}
+.hbtn{padding:5px 10px;border-radius:6px;border:1px solid var(--border);background:var(--bg3);color:var(--txt2);cursor:pointer;font-size:10px;transition:all .2s;white-space:nowrap}
 .hbtn:active{opacity:.7}
 .sync-dot{width:6px;height:6px;border-radius:50%;background:#5bcea6;display:inline-block;margin-right:4px;animation:pulse 2s infinite}
 .sync-dot.off{background:#e05c5c;animation:none}
 @keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
 
 /* ── CONTENT ── */
-#content{flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;padding:12px 12px 80px}
+#content{flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;padding:12px 12px 80px;background:var(--bg)}
 
 /* ── BOTTOM NAV ── */
-#bnav{position:fixed;bottom:0;left:0;right:0;background:#0e1018;border-top:1px solid #181b24;display:flex;z-index:50;padding-bottom:env(safe-area-inset-bottom)}
-.nb{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:8px 4px 6px;border:none;background:none;cursor:pointer;color:#3a3f55;font-size:9px;gap:2px;transition:color .2s}
+#bnav{position:fixed;bottom:0;left:0;right:0;background:var(--bg2);border-top:1px solid var(--border2);display:flex;z-index:50;padding-bottom:env(safe-area-inset-bottom)}
+.nb{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:8px 4px 6px;border:none;background:none;cursor:pointer;color:var(--txt3);font-size:9px;gap:2px;transition:color .2s}
 .nb .ni{font-size:17px}
 .nb.on{color:var(--zc)}
 
 /* ── CONTROLS ── */
 .ctrl-row{display:flex;gap:7px;margin-bottom:10px;flex-wrap:wrap}
-.cs{background:#131620;border:1px solid #1e2231;color:#ddd8cc;padding:7px 10px;border-radius:7px;font-size:12px;flex:1;min-width:70px}
-.search-box{width:100%;background:#131620;border:1px solid #1e2231;color:#ddd8cc;padding:8px 12px;border-radius:7px;font-size:12px;margin-bottom:10px}
+.cs{background:var(--bg3);border:1px solid var(--border);color:var(--txt);padding:7px 10px;border-radius:7px;font-size:12px;flex:1;min-width:70px}
+.search-box{width:100%;background:var(--bg3);border:1px solid var(--border);color:var(--txt);padding:8px 12px;border-radius:7px;font-size:12px;margin-bottom:10px}
 .frow{display:flex;gap:5px;margin-bottom:10px;flex-wrap:wrap}
-.fchip{background:none;border:1px solid #1e2231;color:#555;padding:4px 12px;border-radius:20px;cursor:pointer;font-size:11px;transition:all .2s}
+.fchip{background:none;border:1px solid var(--border);color:var(--txt3);padding:4px 12px;border-radius:20px;cursor:pointer;font-size:11px;transition:all .2s}
 .fchip.on{border-color:var(--zc);color:var(--zc);background:var(--zcdim)}
 
 /* ── SUMMARY BAR ── */
-.sum-bar{background:#0e1018;border:1px solid #181b24;border-radius:9px;padding:10px 14px;margin-bottom:10px;display:flex;justify-content:space-between;align-items:center}
-.sum-lbl{font-size:9px;color:#444;letter-spacing:.06em}
+.sum-bar{background:var(--bg2);border:1px solid var(--border2);border-radius:9px;padding:10px 14px;margin-bottom:10px;display:flex;justify-content:space-between;align-items:center}
+.sum-lbl{font-size:9px;color:var(--txt4);letter-spacing:.06em}
 .sum-val{font-family:'Syne',sans-serif;font-size:19px;font-weight:800;color:var(--zc)}
 .stat-row{display:flex;gap:7px;margin-bottom:10px}
-.sbox{flex:1;background:#0e1018;border:1px solid #181b24;border-radius:8px;padding:8px 10px}
-.sbox-l{font-size:9px;color:#555}
+.sbox{flex:1;background:var(--bg2);border:1px solid var(--border2);border-radius:8px;padding:8px 10px}
+.sbox-l{font-size:9px;color:var(--txt3)}
 .sbox-v{font-family:'Syne',sans-serif;font-size:19px;font-weight:700}
 
 /* ── MEMBER CARD ── */
-.mcard{background:#0e1018;border:1px solid #181b24;border-radius:9px;margin-bottom:6px;overflow:hidden;transition:border .2s}
+.mcard{background:var(--bg2);border:1px solid var(--border2);border-radius:9px;margin-bottom:6px;overflow:hidden;transition:border .2s}
 .mcard.expanded{border-color:var(--zc)}
 .mc-top{display:flex;align-items:center;gap:8px;padding:10px 12px;cursor:pointer}
 .mc-id{font-size:9px;color:#3a7bd5;background:#1e2a4022;border:1px solid #3a7bd522;padding:2px 6px;border-radius:4px;cursor:pointer;text-decoration:none;flex-shrink:0}
 .mc-id.no-link{color:#444;background:transparent;border-color:#1e2231;cursor:default;pointer-events:none}
-.mc-num{font-size:10px;color:#333;width:18px;flex-shrink:0}
+.mc-num{font-size:10px;color:var(--txt5);width:18px;flex-shrink:0}
 .mc-name{font-size:13px;font-weight:500;flex:1}
 .mc-tag{font-size:9px;padding:2px 7px;border-radius:10px;flex-shrink:0}
 .tpaid{background:#0d2b1f;color:#5bcea6;border:1px solid #5bcea622}
 .tunpaid{background:#1f0d0d;color:#e05c5c;border:1px solid #e05c5c22}
-.mc-body{border-top:1px solid #111318;padding:10px 12px}
+.mc-body{border-top:1px solid var(--bg);padding:10px 12px}
 .mc-row{display:flex;gap:8px;align-items:center;margin-bottom:8px;flex-wrap:wrap}
-.mc-label{font-size:10px;color:#555;width:70px;flex-shrink:0}
+.mc-label{font-size:10px;color:var(--txt3);width:70px;flex-shrink:0}
 .mc-val{font-size:14px;color:#5bcea6;flex:1}
 .mc-val.empty{color:#2a2d3a;font-style:italic;font-size:11px}
-.mc-input{background:#131620;border:1px solid var(--zc);color:#ddd8cc;padding:7px 10px;border-radius:6px;font-size:13px;width:130px;text-align:center}
-.mc-date{background:#131620;border:1px solid #1e2231;color:#ddd8cc;padding:6px 10px;border-radius:6px;font-size:12px;width:150px}
+.mc-input{background:var(--bg3);border:1px solid var(--zc);color:var(--txt);padding:7px 10px;border-radius:6px;font-size:13px;width:130px;text-align:center}
+.mc-date{background:var(--bg3);border:1px solid var(--border);color:var(--txt);padding:6px 10px;border-radius:6px;font-size:12px;width:150px}
 .mc-date:focus{border-color:var(--zc)}
 .qrow{display:flex;gap:4px;flex-wrap:wrap}
-.qb{background:#131620;border:1px solid #1e2231;color:#777;padding:5px 9px;border-radius:5px;cursor:pointer;font-size:11px;transition:all .15s}
+.qb{background:var(--bg3);border:1px solid var(--border);color:var(--txt2);padding:5px 9px;border-radius:5px;cursor:pointer;font-size:11px;transition:all .15s}
 .qb:active{background:var(--zcdim);border-color:var(--zc);color:var(--zc)}
 .delbtn{background:none;border:1px solid #2a1a1a;color:#4a2a2a;padding:5px 9px;border-radius:5px;cursor:pointer;font-size:11px}
 .delbtn:active{background:#3d1414;color:#ef4444}
 .save-row{display:flex;gap:6px;justify-content:flex-end;margin-top:8px}
 .sbtn{padding:7px 16px;border-radius:6px;border:none;cursor:pointer;font-size:11px;font-weight:600;transition:all .2s}
 .sbtn.primary{background:var(--zc);color:#fff}
-.sbtn.ghost{background:#131620;border:1px solid #1e2231;color:#888}
+.sbtn.ghost{background:var(--bg3);border:1px solid var(--border);color:var(--txt2)}
 
 /* ── REKAP TABLE ── */
 .rekap-wrap{overflow-x:auto;overflow-y:auto;-webkit-overflow-scrolling:touch;border-radius:10px;border:1px solid #181b24;max-height:calc(100vh - 260px)}
 .rtable{border-collapse:collapse;font-size:11px;width:100%}
-.rtable th{padding:8px 7px;font-size:9px;color:#444;font-weight:500;letter-spacing:.06em;white-space:nowrap;background:#0e1018;position:sticky;top:0;z-index:3}
-.rtable th.stk{position:sticky;z-index:5!important;background:#0e1018}
-.rtable td{padding:6px 7px;border-bottom:1px solid #0a0c12;white-space:nowrap;text-align:center;cursor:pointer}
-.rtable td.stk{position:sticky;background:#0e1018;z-index:2;text-align:left}
-.rtable tr:hover td{background:#111318}
-.rtable tr:hover td.stk{background:#111318}
+.rtable th{padding:8px 7px;font-size:9px;color:var(--txt4);font-weight:500;letter-spacing:.06em;white-space:nowrap;background:var(--bg2);position:sticky;top:0;z-index:3}
+.rtable th.stk{position:sticky;z-index:5!important;background:var(--bg2)}
+.rtable td{padding:6px 7px;border-bottom:1px solid var(--bg);white-space:nowrap;text-align:center;cursor:pointer}
+.rtable td.stk{position:sticky;background:var(--bg2);z-index:2;text-align:left}
+.rtable tr:hover td{background:var(--bg3)}
+.rtable tr:hover td.stk{background:var(--bg3)}
 .cv{background:#0a2010;color:#5bcea6}.cz{background:#0a2010;color:#5bcea6}.cn{color:#1c1f2a}
 
 /* ── TUNGGAKAN ── */
@@ -153,67 +168,67 @@ img{pointer-events:none}
 .tmonth{background:#1f0d0d;color:#e05c5c;border:1px solid #e05c5c22;padding:3px 9px;border-radius:12px;font-size:10px}
 
 /* ── GRAFIK ── */
-.chart-box{background:#0e1018;border:1px solid #181b24;border-radius:10px;padding:14px;margin-bottom:12px}
-.chart-title{font-size:10px;color:#555;letter-spacing:.07em;margin-bottom:12px}
+.chart-box{background:var(--bg2);border:1px solid var(--border2);border-radius:10px;padding:14px;margin-bottom:12px}
+.chart-title{font-size:10px;color:var(--txt3);letter-spacing:.07em;margin-bottom:12px}
 .chart-wrap{position:relative;height:200px}
 
 /* ── LOG ── */
-.log-item{background:#0e1018;border:1px solid #181b24;border-radius:8px;padding:10px 12px;margin-bottom:5px}
-.log-time{font-size:9px;color:#444}
+.log-item{background:var(--bg2);border:1px solid var(--border2);border-radius:8px;padding:10px 12px;margin-bottom:5px}
+.log-time{font-size:9px;color:var(--txt4)}
 .log-action{font-size:12px;margin-top:2px}
-.log-detail{font-size:10px;color:#666;margin-top:2px}
+.log-detail{font-size:10px;color:var(--txt3);margin-top:2px}
 
 /* ── MEMBER PAGE ── */
-.add-form{background:#0e1018;border:1px solid #181b24;border-radius:10px;padding:14px;margin-bottom:14px}
-.af-title{font-size:10px;color:#555;letter-spacing:.07em;margin-bottom:10px}
+.add-form{background:var(--bg2);border:1px solid var(--border2);border-radius:10px;padding:14px;margin-bottom:14px}
+.af-title{font-size:10px;color:var(--txt3);letter-spacing:.07em;margin-bottom:10px}
 .af-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px}
-.af-input{background:#131620;border:1px solid #1e2231;color:#ddd8cc;padding:8px 12px;border-radius:7px;font-size:12px;width:100%}
+.af-input{background:var(--bg3);border:1px solid var(--border);color:var(--txt);padding:8px 12px;border-radius:7px;font-size:12px;width:100%}
 .af-input:focus{border-color:var(--zc)}
 .mem-section{margin-bottom:16px}
-.ms-hdr{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;padding-bottom:6px;border-bottom:1px solid #181b24}
+.ms-hdr{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;padding-bottom:6px;border-bottom:1px solid var(--border2)}
 .ms-title{font-family:'Syne',sans-serif;font-weight:800;font-size:13px}
-.mem-row{background:#0e1018;border:1px solid #181b24;border-radius:7px;padding:9px 12px;margin-bottom:4px;display:flex;align-items:center;gap:8px}
+.mem-row{background:var(--bg2);border:1px solid var(--border2);border-radius:7px;padding:9px 12px;margin-bottom:4px;display:flex;align-items:center;gap:8px}
 .mem-id-badge{font-size:9px;color:#3a7bd5;background:#1e2a4022;border:1px solid #3a7bd522;padding:2px 6px;border-radius:4px;min-width:45px;text-align:center}
 .mem-name-txt{font-size:12px;flex:1}
-.mem-ip-txt{font-size:10px;color:#555;max-width:130px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.mem-ip-txt{font-size:10px;color:var(--txt3);max-width:130px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 
 /* ── SHARE MODAL ── */
 .modal-bg{position:fixed;inset:0;background:#000a;z-index:300;display:flex;align-items:flex-end}
 .modal-bg.center{align-items:center;justify-content:center;padding:20px}
-.modal{background:#0e1018;border:1px solid #1e2231;border-radius:16px 16px 0 0;padding:20px;width:100%;max-height:85vh;overflow-y:auto}
+.modal{background:var(--bg2);border:1px solid var(--border);border-radius:16px 16px 0 0;padding:20px;width:100%;max-height:85vh;overflow-y:auto}
 .modal.center{border-radius:14px;max-width:380px;width:100%}
 .modal-title{font-family:'Syne',sans-serif;font-weight:800;font-size:15px;margin-bottom:16px;display:flex;justify-content:space-between;align-items:center}
-.modal-close{background:none;border:none;color:#555;font-size:18px;cursor:pointer;padding:4px}
+.modal-close{background:none;border:none;color:var(--txt3);font-size:18px;cursor:pointer;padding:4px}
 .modal-row{margin-bottom:12px}
-.modal-label{font-size:10px;color:#555;letter-spacing:.06em;margin-bottom:5px}
-.modal-select{width:100%;background:#131620;border:1px solid #1e2231;color:#ddd8cc;padding:9px 12px;border-radius:7px;font-size:13px}
+.modal-label{font-size:10px;color:var(--txt3);letter-spacing:.06em;margin-bottom:5px}
+.modal-select{width:100%;background:var(--bg3);border:1px solid var(--border);color:var(--txt);padding:9px 12px;border-radius:7px;font-size:13px}
 .format-row{display:flex;gap:8px}
-.fmt-btn{flex:1;padding:10px;border-radius:8px;border:1px solid #1e2231;background:#131620;color:#888;cursor:pointer;font-size:12px;text-align:center;transition:all .2s}
+.fmt-btn{flex:1;padding:10px;border-radius:8px;border:1px solid var(--border);background:var(--bg3);color:var(--txt2);cursor:pointer;font-size:12px;text-align:center;transition:all .2s}
 .fmt-btn.on{border-color:var(--zc);color:var(--zc);background:var(--zcdim)}
 .modal-action{width:100%;padding:12px;border-radius:8px;border:none;background:var(--zc);color:#fff;font-size:13px;font-weight:600;cursor:pointer;margin-top:8px}
 .modal-action:active{opacity:.8}
 
 /* ── LOCK ── */
 .entry-locked-overlay{position:absolute;inset:0;z-index:10;border-radius:10px;cursor:not-allowed}
-.lock-badge{position:absolute;top:6px;right:6px;font-size:11px;background:#1a1a2e;border:1px solid #3a3a5e;border-radius:4px;padding:2px 6px;color:#555}
+.lock-badge{position:absolute;top:6px;right:6px;font-size:11px;background:var(--bg3);border:1px solid var(--border);border-radius:4px;padding:2px 6px;color:var(--txt3)}
 
 /* ── RECYCLE BIN ── */
 .del-card{background:#0e1018;border:1px solid #e05c5c22;border-radius:10px;padding:10px 12px;margin-bottom:8px;display:flex;justify-content:space-between;align-items:center;gap:8px}
-.del-card-name{font-size:13px;color:#888;flex:1}
+.del-card-name{font-size:13px;color:var(--txt2);flex:1}
 .del-card-info{font-size:10px;color:#444}
 .restore-btn{background:#0a2a18;border:1px solid #5bcea655;color:#5bcea6;padding:5px 10px;border-radius:6px;cursor:pointer;font-size:11px;flex-shrink:0}
 
 /* ── OPERASIONAL ── */
-.ops-card{background:#0e1018;border:1px solid #1e2231;border-radius:10px;padding:12px;margin-bottom:8px}
+.ops-card{background:var(--bg2);border:1px solid var(--border);border-radius:10px;padding:12px;margin-bottom:8px}
 .ops-row{display:flex;gap:8px;align-items:center;margin-bottom:6px}
-.ops-input{background:#131620;border:1px solid #1e2231;color:#ccc;border-radius:6px;padding:6px 10px;font-size:12px;font-family:inherit}
-.ops-input:focus{outline:none;border-color:#3a7bd5}
+.ops-input{background:var(--bg3);border:1px solid var(--border);color:var(--txt);border-radius:6px;padding:6px 10px;font-size:12px;font-family:inherit}
+.ops-input:focus{outline:none;border-color:var(--zc)}
 .ops-input.wide{flex:1}
 .ops-input.num{width:110px;text-align:right}
-.ops-result{background:#0a0c12;border:1px solid #1e2231;border-radius:10px;padding:14px;margin-top:10px}
-.ops-result-row{display:flex;justify-content:space-between;align-items:center;padding:6px 0;border-bottom:1px solid #1e2231}
+.ops-result{background:var(--bg);border:1px solid var(--border);border-radius:10px;padding:14px;margin-top:10px}
+.ops-result-row{display:flex;justify-content:space-between;align-items:center;padding:6px 0;border-bottom:1px solid var(--border)}
 .ops-result-row:last-child{border-bottom:none}
-.ops-result-lbl{font-size:11px;color:#666}
+.ops-result-lbl{font-size:11px;color:var(--txt3)}
 .ops-result-val{font-size:13px;font-weight:700}
 
 /* ── TOAST ── */
@@ -232,8 +247,27 @@ img{pointer-events:none}
 .inst-txt{flex:1;font-size:11px;color:#5bcea6;line-height:1.5}
 .inst-btn{background:#5bcea6;color:#0a0c12;border:none;padding:6px 12px;border-radius:6px;font-size:11px;cursor:pointer;font-weight:700}
 
+/* ── GLOBAL SEARCH ── */
+#gsearch-modal{position:fixed;inset:0;z-index:9000;background:#000a;display:none;flex-direction:column;padding:16px 14px}
+#gsearch-modal.open{display:flex}
+#gsearch-box{background:var(--bg2);border:1px solid var(--border);color:var(--txt);padding:12px 16px;border-radius:12px;font-size:14px;width:100%;font-family:'DM Mono',monospace;outline:none}
+#gsearch-box:focus{border-color:var(--zc)}
+#gsearch-results{flex:1;overflow-y:auto;margin-top:10px}
+.gsr-item{background:var(--bg2);border:1px solid var(--border2);border-radius:9px;padding:10px 14px;margin-bottom:6px;cursor:pointer;display:flex;align-items:center;gap:10px}
+.gsr-item:active{opacity:.7}
+.gsr-zone{font-size:9px;padding:2px 7px;border-radius:4px;flex-shrink:0;font-weight:600}
+.gsr-name{font-size:13px;font-weight:600;flex:1;color:var(--txt)}
+.gsr-detail{font-size:10px;color:var(--txt4);text-align:right}
+
+/* ── RIWAYAT MODAL ── */
+#riwayat-modal{position:fixed;inset:0;z-index:9000;background:#000a;display:none;align-items:flex-end;justify-content:center}
+#riwayat-modal.open{display:flex}
+.riwayat-box{background:var(--bg2);border:1px solid var(--border);border-radius:16px 16px 0 0;padding:20px;width:100%;max-height:85vh;overflow-y:auto}
+.rw-month-row{display:flex;align-items:center;justify-content:space-between;padding:7px 0;border-bottom:1px solid var(--border2)}
+.rw-month-row:last-child{border-bottom:none}
+
 /* ── ACCOUNT MODAL ── */
-.acc-modal{background:#0e1018;border:1px solid #1e2231;border-radius:14px 14px 0 0;padding:20px;width:100%}
+.acc-modal{background:var(--bg2);border:1px solid var(--border);border-radius:14px 14px 0 0;padding:20px;width:100%}
 </style>
 </head>
 <body>
@@ -245,19 +279,19 @@ img{pointer-events:none}
     <div class="modal-title" id="fm-title">🆓 Free Member</div>
     <input type="hidden" id="fm-zone"/><input type="hidden" id="fm-name"/>
     <div style="margin-bottom:10px">
-      <div style="font-size:10px;color:#555;margin-bottom:5px;letter-spacing:.06em">MULAI GRATIS DARI</div>
+      <div style="font-size:10px;color:var(--txt3);margin-bottom:5px;letter-spacing:.06em">MULAI GRATIS DARI</div>
       <div style="display:flex;gap:6px">
         <select id="fm-from-year" class="cs" style="flex:1"></select>
         <select id="fm-from-month" class="cs" style="flex:1"></select>
       </div>
     </div>
     <div style="margin-bottom:10px">
-      <label style="display:flex;align-items:center;gap:8px;font-size:11px;color:#888;cursor:pointer;margin-bottom:8px">
+      <label style="display:flex;align-items:center;gap:8px;font-size:11px;color:var(--txt2);cursor:pointer;margin-bottom:8px">
         <input type="checkbox" id="fm-no-end" onchange="toggleFmEnd()" style="accent-color:#5bcea6"/>
         Gratis selamanya (tanpa tanggal selesai)
       </label>
       <div id="fm-end-row" style="display:flex;flex-direction:column;gap:5px">
-        <div style="font-size:10px;color:#555;letter-spacing:.06em">SAMPAI DENGAN</div>
+        <div style="font-size:10px;color:var(--txt3);letter-spacing:.06em">SAMPAI DENGAN</div>
         <div style="display:flex;gap:6px">
           <select id="fm-to-year" class="cs" style="flex:1"></select>
           <select id="fm-to-month" class="cs" style="flex:1"></select>
@@ -268,7 +302,7 @@ img{pointer-events:none}
       <button onclick="saveFreeModal()" style="flex:1;background:#0a2a18;border:1px solid #5bcea6;color:#5bcea6;padding:10px;border-radius:8px;cursor:pointer;font-weight:600;font-size:12px">✅ Simpan Free</button>
       <button onclick="removeFreeModal(document.getElementById('fm-zone').value,document.getElementById('fm-name').value)" style="flex:1;background:#1f0d0d;border:1px solid #e05c5c;color:#e05c5c;padding:10px;border-radius:8px;cursor:pointer;font-weight:600;font-size:12px">💳 Kembalikan Berbayar</button>
     </div>
-    <button onclick="closeFreeModal()" style="width:100%;margin-top:8px;background:none;border:1px solid #1e2231;color:#444;padding:8px;border-radius:8px;cursor:pointer;font-size:12px">Batal</button>
+    <button onclick="closeFreeModal()" style="width:100%;margin-top:8px;background:none;border:1px solid #1e2231;color:var(--txt4);padding:8px;border-radius:8px;cursor:pointer;font-size:12px">Batal</button>
   </div>
 </div>
 
@@ -288,9 +322,9 @@ img{pointer-events:none}
     <div id="login-remembered" style="display:none">
       <div style="text-align:center;margin-bottom:20px">
         <div style="width:52px;height:52px;background:linear-gradient(135deg,#3a7bd5,#2563eb);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:22px;margin:0 auto 12px">👤</div>
-        <div style="font-size:11px;color:#555;letter-spacing:.06em;margin-bottom:4px">SELAMAT DATANG KEMBALI</div>
-        <div style="font-size:14px;color:#ddd8cc;font-weight:500" id="remembered-name"></div>
-        <div style="font-size:11px;color:#444;margin-top:2px" id="remembered-email"></div>
+        <div style="font-size:11px;color:var(--txt3);letter-spacing:.06em;margin-bottom:4px">SELAMAT DATANG KEMBALI</div>
+        <div style="font-size:14px;color:var(--txt);font-weight:500" id="remembered-name"></div>
+        <div style="font-size:11px;color:var(--txt4);margin-top:2px" id="remembered-email"></div>
       </div>
       <button class="lf-btn" id="btn-lanjut" onclick="loginRemembered()">🚀 Lanjutkan</button>
       <div style="text-align:center;margin:12px 0;font-size:11px;color:#444">atau</div>
@@ -348,12 +382,15 @@ img{pointer-events:none}
       <button class="hbtn" onclick="document.getElementById('imp-file').click()">⬆ Import</button>
       <input type="file" id="imp-file" accept=".json" onchange="importData(event)" style="display:none"/>
       <button class="hbtn" id="global-lock-btn" onclick="toggleGlobalLock()">🔓</button>
+      <button class="hbtn" onclick="openGlobalSearch()" title="Cari member">🔍</button>
+      <button class="hbtn" id="theme-btn" onclick="toggleTheme()" title="Ganti tema">🌙</button>
       <button class="hbtn" onclick="showAccountModal()">👤</button>
     </div>
   </div>
   <div id="content"></div>
   <div id="bnav">
-    <button class="nb on" data-v="entry" onclick="setView('entry')"><span class="ni">📝</span>Entry</button>
+    <button class="nb on" data-v="dashboard" onclick="setView('dashboard')"><span class="ni">🏠</span>Home</button>
+    <button class="nb" data-v="entry" onclick="setView('entry')"><span class="ni">📝</span>Entry</button>
     <button class="nb" data-v="rekap" onclick="setView('rekap')"><span class="ni">📊</span>Rekap</button>
     <button class="nb" data-v="tunggakan" onclick="setView('tunggakan')"><span class="ni">⚠️</span>Tunggak</button>
     <button class="nb" data-v="grafik" onclick="setView('grafik')"><span class="ni">📈</span>Grafik</button>
@@ -433,11 +470,31 @@ img{pointer-events:none}
   <div class="modal">
     <div class="modal-title">👤 Akun<button class="modal-close" onclick="closeModal('account-modal')">✕</button></div>
     <div style="background:#131620;border-radius:8px;padding:12px;margin-bottom:14px">
-      <div style="font-size:10px;color:#555;margin-bottom:4px">LOGIN SEBAGAI</div>
+      <div style="font-size:10px;color:var(--txt3);margin-bottom:4px">LOGIN SEBAGAI</div>
       <div style="font-size:13px" id="acc-email-display"></div>
     </div>
     <button class="lf-btn secondary" onclick="switchAccount()" style="margin-bottom:8px">↔ Ganti Akun</button>
     <button class="lf-btn" style="background:#1f0d0d;color:#e05c5c;border:1px solid #e05c5c33" onclick="doLogout()">Keluar</button>
+  </div>
+</div>
+
+<!-- ══ GLOBAL SEARCH ══ -->
+<div id="gsearch-modal">
+  <div style="display:flex;gap:8px;align-items:center;margin-top:env(safe-area-inset-top)">
+    <input id="gsearch-box" placeholder="🔍 Cari nama member..." oninput="doGlobalSearch(this.value)"/>
+    <button onclick="closeGlobalSearch()" style="background:var(--bg3);border:1px solid var(--border);color:var(--txt2);padding:10px 14px;border-radius:10px;cursor:pointer;font-size:13px;flex-shrink:0">✕</button>
+  </div>
+  <div id="gsearch-results"><div style="text-align:center;padding:40px;color:var(--txt4);font-size:13px">Ketik nama untuk mencari...</div></div>
+</div>
+
+<!-- ══ RIWAYAT MEMBER MODAL ══ -->
+<div id="riwayat-modal" onclick="if(event.target===this)closeRiwayat()">
+  <div class="riwayat-box">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
+      <div id="riwayat-title" style="font-family:'Syne',sans-serif;font-weight:800;font-size:15px;color:var(--txt)">Riwayat Bayar</div>
+      <button onclick="closeRiwayat()" style="background:none;border:none;color:var(--txt3);font-size:18px;cursor:pointer">✕</button>
+    </div>
+    <div id="riwayat-content"></div>
   </div>
 </div>
 
@@ -447,15 +504,19 @@ img{pointer-events:none}
     <div class="modal-title">✏️ Edit Member<button class="modal-close" onclick="closeModal('edit-member-modal')">✕</button></div>
     <div class="modal-row">
       <div class="modal-label">NAMA</div>
-      <input class="modal-select" id="em-name" style="border-radius:7px;padding:9px 12px;background:#131620;border:1px solid #1e2231;color:#ddd8cc;font-size:13px"/>
+      <input class="modal-select" id="em-name" style="border-radius:7px;padding:9px 12px;background:var(--bg3);border:1px solid var(--border);color:var(--txt);font-size:13px"/>
     </div>
     <div class="modal-row">
       <div class="modal-label">ID PELANGGAN</div>
-      <input class="modal-select" id="em-id" style="border-radius:7px;padding:9px 12px;background:#131620;border:1px solid #1e2231;color:#ddd8cc;font-size:13px" placeholder="Opsional"/>
+      <input class="modal-select" id="em-id" style="border-radius:7px;padding:9px 12px;background:var(--bg3);border:1px solid var(--border);color:var(--txt);font-size:13px" placeholder="Opsional"/>
     </div>
     <div class="modal-row">
       <div class="modal-label">IP / LINK ROUTER</div>
-      <input class="modal-select" id="em-ip" style="border-radius:7px;padding:9px 12px;background:#131620;border:1px solid #1e2231;color:#ddd8cc;font-size:13px" placeholder="192.168.x.x atau http://..."/>
+      <input class="modal-select" id="em-ip" style="border-radius:7px;padding:9px 12px;background:var(--bg3);border:1px solid var(--border);color:var(--txt);font-size:13px" placeholder="192.168.x.x atau http://..."/>
+    </div>
+    <div class="modal-row">
+      <div class="modal-label">TARIF BULANAN (×1000)</div>
+      <input class="modal-select" id="em-tarif" type="number" inputmode="numeric" style="border-radius:7px;padding:9px 12px;background:var(--bg3);border:1px solid var(--border);color:var(--txt);font-size:13px" placeholder="Contoh: 100 = Rp 100.000"/>
     </div>
     <input type="hidden" id="em-original-name"/>
     <input type="hidden" id="em-zone"/>
@@ -502,7 +563,7 @@ let _isSaving=false;
 let _lastSaveTs=0;
 let globalLocked=localStorage.getItem('wp_global_locked')==='1';
 let lockedEntries=JSON.parse(localStorage.getItem('wp_locked_entries')||'{}');
-let activeZone="KRS", currentView="entry";
+let activeZone="KRS", currentView="dashboard";
 let selYear=new Date().getFullYear(), selMonth=new Date().getMonth();
 let search="", filterStatus="all", expandedCard=null;
 let newMemberZone="KRS";
@@ -511,6 +572,8 @@ let dbRef=null, deferredPrompt=null;
 let chartInstances={};
 let pendingEdits={};
 let membersLocked=localStorage.getItem('wp_members_locked')==='1';
+let darkMode=localStorage.getItem('wp_dark_mode')!=='0'; // default dark
+let _globalSearchOpen=false;
 
 // ══════════════════════════════════════════
 // AUTH
@@ -743,6 +806,7 @@ function initDB(){
     // Jika val ada tapi krsMembers belum (masih proses upload) - jangan overwrite
     setSyncStatus('ok');
     render();
+    checkAutoBackup();
   },err=>{setSyncStatus('err');});
 }
 
@@ -856,6 +920,107 @@ function cleanOldEditLogs(){
 function members(){if(activeZone==='TOTAL')return [...appData.krsMembers,...appData.slkMembers];return activeZone==='KRS'?appData.krsMembers:appData.slkMembers;}
 function getInfo(name){return appData.memberInfo?.[activeZone+'__'+name]||{};}
 
+function openGlobalSearch(){
+  const modal=document.getElementById('gsearch-modal');
+  if(modal){modal.classList.add('open');setTimeout(()=>{const b=document.getElementById('gsearch-box');if(b){b.value='';b.focus();}doGlobalSearch('');},50);}
+}
+function closeGlobalSearch(){
+  const modal=document.getElementById('gsearch-modal');
+  if(modal) modal.classList.remove('open');
+}
+function doGlobalSearch(q){
+  const res=document.getElementById('gsearch-results');
+  if(!res) return;
+  if(!q.trim()){res.innerHTML='<div style="text-align:center;padding:40px;color:var(--txt4);font-size:13px">Ketik nama untuk mencari...</div>';return;}
+  const results=[];
+  for(const z of ['KRS','SLK']){
+    const mems=z==='KRS'?appData.krsMembers:appData.slkMembers;
+    for(const name of mems){
+      if(name.toLowerCase().includes(q.toLowerCase())){
+        const info=appData.memberInfo?.[z+'__'+name]||{};
+        const val=getPay(z,name,selYear,selMonth);
+        const paid=val!==null&&val>0;
+        const free=isFree(z,name,selYear,selMonth);
+        results.push({z,name,info,paid,free,val});
+      }
+    }
+  }
+  if(!results.length){res.innerHTML='<div style="text-align:center;padding:40px;color:var(--txt4);font-size:13px">Tidak ditemukan</div>';return;}
+  res.innerHTML=results.map(r=>`<div class="gsr-item" onclick="gotoMember('${r.z}','${r.name.replace(/'/g,"\'")}')">
+    <span class="gsr-zone" style="background:${r.z==='KRS'?'#1e2a40':'#3d1f14'};color:${r.z==='KRS'?'#3a7bd5':'#e05c3a'}">${r.z}</span>
+    <div style="flex:1">
+      <div class="gsr-name">${r.name}</div>
+      ${r.info.id?`<div style="font-size:9px;color:var(--txt4)">${r.info.id}${r.info.ip?' · '+r.info.ip:''}</div>`:''}
+    </div>
+    <div class="gsr-detail">
+      ${r.free?'<span style="color:#5bcea6">🆓 Free</span>':r.paid?`<span style="color:#5bcea6">✓ ${r.val?.toLocaleString('id-ID')}</span>`:'<span style="color:#e05c5c">✕ Belum</span>'}
+      ${r.info.tarif?`<div style="font-size:9px;color:var(--txt4)">Tarif: ${rp(r.info.tarif)}</div>`:''}
+    </div>
+  </div>`).join('');
+}
+function openRiwayat(zone,name){
+  const modal=document.getElementById('riwayat-modal');
+  const title=document.getElementById('riwayat-title');
+  const content=document.getElementById('riwayat-content');
+  if(!modal||!title||!content) return;
+  title.textContent=`📋 ${name} (${zone})`;
+  // Tampilkan 12 bulan terakhir
+  const now=new Date();
+  let yw=now.getFullYear(); let mw=now.getMonth();
+  const rows=[];
+  for(let i=0;i<12;i++){
+    const v=getPay(zone,name,yw,mw);
+    const free=isFree(zone,name,yw,mw);
+    const info=appData.memberInfo?.[zone+'__'+name]||{};
+    const tgl=info['date_'+yw+'_'+mw]||'';
+    let statusHtml='';
+    if(free) statusHtml=`<span style="color:#5bcea6;font-size:11px">🆓 Free</span>`;
+    else if(v!==null&&v>0) statusHtml=`<span style="color:#5bcea6;font-size:11px;font-weight:600">${rp(v)}</span>`;
+    else if(v===0) statusHtml=`<span style="color:#5bcea6;font-size:11px">Rp 0</span>`;
+    else statusHtml=`<span style="color:#e05c5c;font-size:11px">✕ Belum</span>`;
+    rows.push(`<div class="rw-month-row">
+      <div>
+        <div style="font-size:12px;color:var(--txt)">${MONTHS[mw]} ${yw}</div>
+        ${tgl?`<div style="font-size:9px;color:var(--txt4)">${tgl}</div>`:''}
+      </div>
+      ${statusHtml}
+    </div>`);
+    mw--;
+    if(mw<0){mw=11;yw--;}
+  }
+  // Total setahun terakhir
+  const totalNow=new Date();
+  let totVal=0;
+  for(let mi=0;mi<12;mi++) totVal+=getPay(zone,name,totalNow.getFullYear(),mi)||0;
+  content.innerHTML=rows.join('')+`<div style="margin-top:12px;padding:10px;background:var(--bg3);border-radius:8px;display:flex;justify-content:space-between">
+    <span style="font-size:11px;color:var(--txt4)">Total ${totalNow.getFullYear()}</span>
+    <span style="font-size:13px;font-weight:700;color:var(--zc)">${rp(totVal)}</span>
+  </div>`;
+  modal.classList.add('open');
+}
+function closeRiwayat(){
+  const modal=document.getElementById('riwayat-modal');
+  if(modal) modal.classList.remove('open');
+}
+
+function gotoMember(zone,name){
+  closeGlobalSearch();
+  activeZone=zone;
+  setZoneColor(zone);
+  document.querySelectorAll('.zbtn').forEach(b=>{b.className='zbtn';if(b.textContent===zone){if(zone==='KRS')b.classList.add('krs');else b.classList.add('slk');}});
+  expandedCard=name; search=''; currentView='entry';
+  document.querySelectorAll('.nb').forEach(b=>b.classList.toggle('on',b.dataset.v==='entry'));
+  render();
+  setTimeout(()=>{const el=document.getElementById('card-'+name.replace(/\s/g,'_'));if(el)el.scrollIntoView({behavior:'smooth',block:'nearest'});},100);
+}
+
+function toggleTheme(){
+  darkMode=!darkMode;
+  localStorage.setItem('wp_dark_mode', darkMode?'1':'0');
+  document.body.classList.toggle('light',!darkMode);
+  render();
+}
+
 function setZoneColor(z){
   const zc=z==='KRS'?'#3a7bd5':'#e05c3a';
   const zcdim=z==='KRS'?'#1e2a4033':'#3d1f1433';
@@ -875,6 +1040,75 @@ function showToast(msg,type='ok'){
 }
 
 function closeModal(id){document.getElementById(id).style.display='none';}
+
+// ══════════════════════════════════════════
+// BACKUP
+// ══════════════════════════════════════════
+function doWASummary(){
+  const now=new Date();
+  const dy=now.getFullYear(); const dm=now.getMonth();
+  const bulan=MONTHS[dm]+' '+dy;
+  const krsTotal=getZoneTotal('KRS',dy,dm);
+  const slkTotal=getZoneTotal('SLK',dy,dm);
+  const total=krsTotal+slkTotal;
+  const krsLunas=(appData.krsMembers||[]).filter(m=>(getPay('KRS',m,dy,dm)||0)>0).length;
+  const slkLunas=(appData.slkMembers||[]).filter(m=>(getPay('SLK',m,dy,dm)||0)>0).length;
+  const krsBelum=(appData.krsMembers||[]).filter(m=>getPay('KRS',m,dy,dm)===null&&!isFree('KRS',m,dy,dm)).length;
+  const slkBelum=(appData.slkMembers||[]).filter(m=>getPay('SLK',m,dy,dm)===null&&!isFree('SLK',m,dy,dm)).length;
+  const opsKey=`${dy}_${dm}`;
+  const opsData=appData.operasional?.[opsKey]||{items:[]};
+  const totalOps=(opsData.items||[]).reduce((s,it)=>s+(+it.nominal||0),0);
+  const netIncome=total-totalOps;
+  const tunggakKRS=(appData.krsMembers||[]).filter(m=>getArrears('KRS',m,dy,dm).filter(u=>!isFree('KRS',m,u.y,u.mi)).length>0).length;
+  const tunggakSLK=(appData.slkMembers||[]).filter(m=>getArrears('SLK',m,dy,dm).filter(u=>!isFree('SLK',m,u.y,u.mi)).length>0).length;
+  const msg=`📶 *WiFi Pay – Rekap ${bulan}*
+
+💰 *Pendapatan*
+  KRS : Rp ${(krsTotal*1000).toLocaleString('id-ID')}
+  SLK : Rp ${(slkTotal*1000).toLocaleString('id-ID')}
+  Total: Rp ${(total*1000).toLocaleString('id-ID')}
+
+✅ *Lunas*
+  KRS: ${krsLunas} | SLK: ${slkLunas}
+
+⚠️ *Belum Bayar ${bulan}*
+  KRS: ${krsBelum} | SLK: ${slkBelum}
+
+🔴 *Ada Tunggakan*
+  KRS: ${tunggakKRS} | SLK: ${tunggakSLK}
+
+💸 Operasional : Rp ${(totalOps*1000).toLocaleString('id-ID')}
+✨ Bersih         : Rp ${(netIncome*1000).toLocaleString('id-ID')}
+
+_WiFi Pay – ${new Date().toLocaleString('id-ID')}_`;
+  window.open('https://wa.me/?text='+encodeURIComponent(msg),'_blank');
+}
+
+function doManualBackup(){
+  const blob=new Blob([JSON.stringify({...appData,exportedAt:new Date().toISOString()},null,2)],{type:'application/json'});
+  const a=document.createElement('a');a.href=URL.createObjectURL(blob);
+  a.download=`wifi-pay-backup-${new Date().toISOString().slice(0,10)}.json`;a.click();
+  localStorage.setItem('wp_last_backup', Date.now().toString());
+  showToast('✅ Backup berhasil!');
+  render(); // Update dashboard backup label
+}
+
+function checkAutoBackup(){
+  const now=new Date();
+  if(now.getDate()!==1) return; // Hanya tanggal 1
+  const lastKey='wp_last_backup';
+  const last=localStorage.getItem(lastKey);
+  if(last){
+    const lastDate=new Date(+last);
+    const sameMonth=lastDate.getMonth()===now.getMonth()&&lastDate.getFullYear()===now.getFullYear();
+    if(sameMonth) return; // Sudah backup bulan ini
+  }
+  // Tanggal 1 dan belum backup bulan ini -> auto backup
+  setTimeout(()=>{
+    doManualBackup();
+    showToast('💾 Auto backup tanggal 1 selesai!');
+  }, 3000); // Delay 3 detik setelah app load
+}
 
 // ══════════════════════════════════════════
 // ZONE & VIEW
@@ -906,18 +1140,180 @@ function render(){
   if(!c)return;
   Object.values(chartInstances).forEach(ch=>{try{ch.destroy();}catch(e){}});
   chartInstances={};
-  if(currentView==='entry') c.innerHTML=renderEntry();
+  if(currentView==='dashboard') c.innerHTML=renderDashboard();
+  else if(currentView==='entry') c.innerHTML=renderEntry();
   else if(currentView==='rekap') c.innerHTML=renderRekap();
   else if(currentView==='tunggakan') c.innerHTML=renderTunggakan();
   else if(currentView==='grafik') c.innerHTML=renderGrafik();
   else if(currentView==='log') c.innerHTML=renderLog();
   else if(currentView==='operasional') c.innerHTML=renderOperasional();
-  else c.innerHTML=renderMembers();
+  else if(currentView==='members') c.innerHTML=renderMembers();
+  else c.innerHTML=renderDashboard(); // fallback
   // Update global lock button icon
   const glb=document.getElementById('global-lock-btn');
   if(glb) glb.textContent=globalLocked?'🔒':'🔓';
+  const thb=document.getElementById('theme-btn');
+  if(thb) thb.textContent=darkMode?'🌙':'☀️';
   attachEvents();
   if(currentView==='grafik') setTimeout(initCharts,50);
+}
+
+// ══════════════════════════════════════════
+// DASHBOARD VIEW
+// ══════════════════════════════════════════
+function renderDashboard(){
+  const now=new Date();
+  const dy=now.getFullYear();
+  const dm=now.getMonth();
+  const krsTotal=getZoneTotal('KRS',dy,dm);
+  const slkTotal=getZoneTotal('SLK',dy,dm);
+  const totalIncome=krsTotal+slkTotal;
+
+  // Ops bulan ini
+  const opsKey=`${dy}_${dm}`;
+  const opsData=appData.operasional?.[opsKey]||{items:[]};
+  const totalOps=(opsData.items||[]).reduce((s,it)=>s+(+it.nominal||0),0);
+  const netIncome=totalIncome-totalOps;
+
+  // Progress lunas/belum KRS
+  const krsAll=appData.krsMembers||[];
+  const krsLunas=krsAll.filter(m=>(getPay('KRS',m,dy,dm)||0)>0).length;
+  const krsBelum=krsAll.filter(m=>getPay('KRS',m,dy,dm)===null&&!isFree('KRS',m,dy,dm)).length;
+
+  // Progress lunas/belum SLK
+  const slkAll=appData.slkMembers||[];
+  const slkLunas=slkAll.filter(m=>(getPay('SLK',m,dy,dm)||0)>0).length;
+  const slkBelum=slkAll.filter(m=>getPay('SLK',m,dy,dm)===null&&!isFree('SLK',m,dy,dm)).length;
+
+  const krsPct=krsAll.length?Math.round(krsLunas/krsAll.length*100):0;
+  const slkPct=slkAll.length?Math.round(slkLunas/slkAll.length*100):0;
+
+  // Top tunggakan
+  const allZones=['KRS','SLK'];
+  const topTunggak=[];
+  for(const z of allZones){
+    const mems=z==='KRS'?appData.krsMembers:appData.slkMembers;
+    for(const name of mems){
+      const unpaid=getArrears(z,name,dy,dm).filter(u=>!isFree(z,name,u.y,u.mi));
+      if(unpaid.length>0) topTunggak.push({z,name,count:unpaid.length,oldest:unpaid[0].label});
+    }
+  }
+  topTunggak.sort((a,b)=>b.count-a.count);
+  const top5=topTunggak.slice(0,5);
+
+  // Bulan & tahun label
+  const bulanLbl=`${MONTHS[dm]} ${dy}`;
+
+  // Cari last backup date
+  const lastBackup=localStorage.getItem('wp_last_backup');
+  const backupLbl=lastBackup?new Date(+lastBackup).toLocaleDateString('id-ID'):'Belum pernah';
+
+  const tunggakCards=top5.length===0
+    ?`<div style="text-align:center;padding:16px;color:#5bcea6;font-size:12px">✅ Semua lunas!</div>`
+    :top5.map(t=>`<div style="display:flex;justify-content:space-between;align-items:center;padding:7px 0;border-bottom:1px solid var(--border2)">
+        <div>
+          <span style="font-size:12px;color:var(--txt)">${t.name}</span>
+          <span style="font-size:9px;color:var(--txt4);margin-left:6px">${t.z}</span>
+        </div>
+        <div style="text-align:right">
+          <span style="font-size:11px;color:#e05c5c;font-weight:700">${t.count} bulan</span>
+          <div style="font-size:9px;color:var(--txt4)">sejak ${t.oldest}</div>
+        </div>
+      </div>`).join('');
+
+  return `
+  <div style="font-family:'Syne',sans-serif;font-weight:800;font-size:16px;margin-bottom:12px;color:var(--txt)">📊 Dashboard</div>
+
+  <!-- Bulan berjalan -->
+  <div style="font-size:9px;color:var(--txt4);letter-spacing:.07em;margin-bottom:6px">${bulanLbl.toUpperCase()}</div>
+
+  <!-- Total income row -->
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px">
+    <div style="background:var(--card);border:1px solid var(--border);border-radius:12px;padding:12px">
+      <div style="font-size:9px;color:var(--txt4);margin-bottom:4px">KRS</div>
+      <div style="font-family:'Syne',sans-serif;font-size:16px;font-weight:800;color:#3a7bd5">${rp(krsTotal)}</div>
+      <div style="margin-top:6px">
+        <div style="height:4px;background:var(--bg3);border-radius:2px;overflow:hidden">
+          <div style="height:100%;width:${krsPct}%;background:#3a7bd5;border-radius:2px;transition:width .4s"></div>
+        </div>
+        <div style="font-size:9px;color:var(--txt4);margin-top:3px">${krsLunas}/${krsAll.length} lunas (${krsPct}%)</div>
+      </div>
+    </div>
+    <div style="background:var(--card);border:1px solid var(--border);border-radius:12px;padding:12px">
+      <div style="font-size:9px;color:var(--txt4);margin-bottom:4px">SLK</div>
+      <div style="font-family:'Syne',sans-serif;font-size:16px;font-weight:800;color:#e05c3a">${rp(slkTotal)}</div>
+      <div style="margin-top:6px">
+        <div style="height:4px;background:var(--bg3);border-radius:2px;overflow:hidden">
+          <div style="height:100%;width:${slkPct}%;background:#e05c3a;border-radius:2px;transition:width .4s"></div>
+        </div>
+        <div style="font-size:9px;color:var(--txt4);margin-top:3px">${slkLunas}/${slkAll.length} lunas (${slkPct}%)</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Kotor / Ops / Bersih -->
+  <div style="background:var(--card);border:1px solid var(--border);border-radius:12px;padding:12px;margin-bottom:8px">
+    <div style="display:flex;justify-content:space-between;margin-bottom:8px">
+      <div>
+        <div style="font-size:9px;color:var(--txt4);margin-bottom:2px">PENDAPATAN KOTOR</div>
+        <div style="font-family:'Syne',sans-serif;font-size:18px;font-weight:800;color:#5bcea6">${rp(totalIncome)}</div>
+      </div>
+      <div style="text-align:right">
+        <div style="font-size:9px;color:var(--txt4);margin-bottom:2px">BERSIH (setelah ops)</div>
+        <div style="font-family:'Syne',sans-serif;font-size:18px;font-weight:800;color:${netIncome>=0?'#5bcea6':'#e05c5c'}">${rp(netIncome)}</div>
+      </div>
+    </div>
+    ${totalOps>0?`<div style="font-size:10px;color:#e05c5c">💸 Operasional: ${rp(totalOps)}</div>`:'<div style="font-size:10px;color:var(--txt4)">💸 Belum ada data operasional</div>'}
+  </div>
+
+  <!-- Belum bayar -->
+  <div style="background:var(--card);border:1px solid var(--border);border-radius:12px;padding:12px;margin-bottom:8px">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+      <div style="font-size:11px;font-weight:700;color:var(--txt)">⚠️ Belum Bayar ${bulanLbl}</div>
+      <div style="font-size:11px;color:#e05c5c;font-weight:700">${krsBelum+slkBelum} pelanggan</div>
+    </div>
+    <div style="display:flex;gap:8px">
+      <div style="flex:1;background:var(--bg3);border-radius:8px;padding:8px;text-align:center">
+        <div style="font-size:9px;color:var(--txt4)">KRS</div>
+        <div style="font-size:18px;font-weight:700;color:#e05c5c">${krsBelum}</div>
+      </div>
+      <div style="flex:1;background:var(--bg3);border-radius:8px;padding:8px;text-align:center">
+        <div style="font-size:9px;color:var(--txt4)">SLK</div>
+        <div style="font-size:18px;font-weight:700;color:#e05c5c">${slkBelum}</div>
+      </div>
+      <div style="flex:1;background:var(--bg3);border-radius:8px;padding:8px;text-align:center">
+        <div style="font-size:9px;color:var(--txt4)">TOTAL</div>
+        <div style="font-size:18px;font-weight:700;color:#5bcea6">${krsLunas+slkLunas}</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Top Tunggakan -->
+  <div style="background:var(--card);border:1px solid var(--border);border-radius:12px;padding:12px;margin-bottom:8px">
+    <div style="font-size:11px;font-weight:700;color:var(--txt);margin-bottom:8px">🔴 Tunggakan Terbanyak</div>
+    ${tunggakCards}
+    ${topTunggak.length>5?`<div style="font-size:10px;color:var(--txt4);text-align:center;margin-top:8px;cursor:pointer" onclick="setView('tunggakan')">+${topTunggak.length-5} lainnya → Lihat semua</div>`:''}
+  </div>
+
+  <!-- Backup status -->
+  <div style="background:var(--card);border:1px solid var(--border);border-radius:12px;padding:12px;margin-bottom:8px;display:flex;justify-content:space-between;align-items:center">
+    <div>
+      <div style="font-size:11px;font-weight:700;color:var(--txt)">💾 Backup Terakhir</div>
+      <div style="font-size:10px;color:var(--txt4);margin-top:2px">${backupLbl}</div>
+    </div>
+    <button onclick="doManualBackup()" style="background:var(--bg3);border:1px solid var(--border);color:var(--txt2);padding:8px 14px;border-radius:8px;cursor:pointer;font-size:11px">Backup Sekarang</button>
+  </div>
+
+  <!-- WA Summary -->
+  <div style="background:var(--card);border:1px solid var(--border);border-radius:12px;padding:12px;margin-bottom:8px">
+    <div style="font-size:11px;font-weight:700;color:var(--txt);margin-bottom:8px">📤 Ringkasan WA</div>
+    <button onclick="doWASummary()" style="width:100%;background:#0d2b1f;border:1px solid #5bcea633;color:#5bcea6;padding:10px;border-radius:8px;cursor:pointer;font-size:12px;font-weight:600">📊 Kirim Ringkasan Bulan Ini ke WA</button>
+  </div>
+
+  <!-- Quick nav -->
+  <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin-bottom:8px">
+    ${[['📝','Entry','entry'],['📊','Rekap','rekap'],['⚠️','Tunggak','tunggakan'],['📈','Grafik','grafik'],['👥','Member','members'],['💼','Ops','operasional']].map(([ic,lb,v])=>`<button onclick="setView('${v}')" style="background:var(--bg3);border:1px solid var(--border);border-radius:10px;padding:10px 4px;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:4px"><span style="font-size:18px">${ic}</span><span style="font-size:10px;color:var(--txt2)">${lb}</span></button>`).join('')}
+  </div>`;
 }
 
 // ══════════════════════════════════════════
@@ -970,7 +1366,7 @@ function renderEntry(){
         <input class="mc-date" type="date" value="${info['date_'+entryYear+'_'+entryMonth]||''}" data-field="date_${entryYear}_${entryMonth}" data-name="${name}" onchange="saveInfoField(this)"/>
       </div>
       <div class="mc-row"><span class="mc-label">QUICK</span>
-        <div class="qrow">${QUICK.map(a=>`<button class="qb" onclick="quickEntryPay('${name}',${a})">${a}</button>`).join('')}</div>
+        <div class="qrow">${(()=>{const info2=getInfo(name);const tarif=info2.tarif;const tarifBtn=tarif?`<button class="qb" style="border-color:var(--zc);color:var(--zc);font-weight:700" onclick="quickEntryPay('${name}',${tarif})">${tarif} ★</button>`:'';const others=QUICK.filter(a=>a!==tarif).map(a=>`<button class="qb" onclick="quickEntryPay('${name}',${a})">${a}</button>`).join('');return tarifBtn+others;})()}</div>
       </div>`}
     </div>`:'';
     const entLocked=globalLocked||(lockedEntries[activeZone+'__'+name]===true);
@@ -996,7 +1392,7 @@ function renderEntry(){
   </div>
   <div class="sum-bar">
     <div><div class="sum-lbl">${MONTHS[selMonth]} ${selYear} · ${activeZone}</div><div class="sum-val">${rp(total)}</div></div>
-    <div style="text-align:right;font-size:11px;color:#555;line-height:2">
+    <div style="text-align:right;font-size:11px;color:var(--txt3);line-height:2">
       <span style="color:#5bcea6">✓ ${paid}</span>&nbsp;<span style="color:#e05c5c">✕ ${unpaid}</span>
     </div>
   </div>
@@ -1022,7 +1418,7 @@ function renderRekap(){
       const disp=free?`<span style="font-size:8px;opacity:.7">🆓</span>`:v!==null?(v*1000).toLocaleString('id-ID'):'—';
       return `<td class="${cls}" onclick="goEntry('${name}',${mi})" title="${free?'Free Member':''}">${disp}</td>`;
     }).join('');
-    return `<tr><td class="stk" style="left:0;font-size:10px;color:#333;padding-left:8px;min-width:22px">${i+1}</td>
+    return `<tr><td class="stk" style="left:0;font-size:10px;color:var(--txt5);padding-left:8px;min-width:22px">${i+1}</td>
     <td class="stk" style="left:22px;min-width:95px;font-size:12px;text-align:left;padding-left:6px">${name}</td>
     ${cells}<td style="color:var(--zc);font-family:'Syne',sans-serif;font-weight:700">${rt.toLocaleString('id-ID')}</td></tr>`;
   }).join('');
@@ -1047,8 +1443,8 @@ function renderRekap(){
       <th style="color:var(--zc);min-width:52px">TOTAL</th>
     </tr></thead>
     <tbody>${rows}</tbody>
-    <tfoot><tr style="background:#111318;border-top:2px solid #1e2231">
-      <td colspan="2" class="stk" style="left:0;font-size:10px;color:#444;padding-left:8px;background:#111318">TOTAL</td>
+    <tfoot><tr style="background:var(--bg3);border-top:2px solid var(--border)">
+      <td colspan="2" class="stk" style="left:0;font-size:10px;color:var(--txt4);padding-left:8px;background:#111318">TOTAL</td>
       ${ftCells}
       <td style="color:var(--zc);font-family:'Syne',sans-serif;font-weight:800">${rp(grand)}</td>
     </tr></tfoot>
@@ -1126,7 +1522,7 @@ function renderTunggakan(){
     }).join('');
 
   const rajinCards=rajin.length===0
-    ?`<div style="text-align:center;padding:30px;color:#555;font-size:13px">Belum ada yang lunas sempurna</div>`
+    ?`<div style="text-align:center;padding:30px;color:var(--txt3);font-size:13px">Belum ada yang lunas sempurna</div>`
     :rajin.map((name,i)=>`<div class="tcard" style="border-color:#5bcea633">
         <div style="display:flex;justify-content:space-between;align-items:center">
           <span class="tcard-name" style="color:#5bcea6">✅ ${i+1}. ${name}</span>
@@ -1142,7 +1538,7 @@ function renderTunggakan(){
         <span class="tcard-name" style="color:#5bcea6">🆓 ${i+1}. ${name}</span>
         <span style="font-size:10px;color:#5bcea6">Gratis</span>
       </div>
-      <div style="font-size:10px;color:#444;margin-top:3px">Dari ${MONTHS[fm.fromMonth]} ${fm.fromYear}${toStr}</div>
+      <div style="font-size:10px;color:var(--txt4);margin-top:3px">Dari ${MONTHS[fm.fromMonth]} ${fm.fromYear}${toStr}</div>
     </div>`;
   }).join('');
 
@@ -1150,7 +1546,7 @@ function renderTunggakan(){
     <select class="cs" onchange="selMonth=+this.value;render()">${moOpts}</select>
     <select class="cs" onchange="selYear=+this.value;render()">${yrOpts}</select>
   </div>
-  <div style="display:flex;gap:4px;margin-bottom:10px;background:#131620;padding:3px;border-radius:20px;border:1px solid #1e2231">
+  <div style="display:flex;gap:4px;margin-bottom:10px;background:var(--bg3);padding:3px;border-radius:20px;border:1px solid var(--border)">
     <button onclick="window._tunggakanMode='nakal';render()" style="flex:1;padding:7px;border-radius:16px;border:none;cursor:pointer;font-size:11px;font-weight:600;background:${mode==='nakal'?'#e05c3a':'transparent'};color:${mode==='nakal'?'#fff':'#555'}">⚠️ Nunggak (${nakal.length})</button>
     <button onclick="window._tunggakanMode='rajin';render()" style="flex:1;padding:7px;border-radius:16px;border:none;cursor:pointer;font-size:11px;font-weight:600;background:${mode==='rajin'?'#5bcea6':'transparent'};color:${mode==='rajin'?'#0a0c12':'#555'}">🌟 Rajin (${rajin.length})</button>
     <button onclick="window._tunggakanMode='free';render()" style="flex:1;padding:7px;border-radius:16px;border:none;cursor:pointer;font-size:11px;font-weight:600;background:${mode==='free'?'#3a5bce':'transparent'};color:${mode==='free'?'#fff':'#555'}">🆓 Free (${freeList.length})</button>
@@ -1239,7 +1635,7 @@ function renderGrafik(){
 
   return `<div class="ctrl-row" style="justify-content:space-between;align-items:center">
     <select class="cs" onchange="selYear=+this.value;render()">${yrOpts}</select>
-    <div style="display:flex;gap:3px;background:#131620;padding:3px;border-radius:20px;border:1px solid #1e2231">
+    <div style="display:flex;gap:3px;background:var(--bg3);padding:3px;border-radius:20px;border:1px solid var(--border)">
       <button onclick="switchZone('KRS')" style="padding:5px 14px;border-radius:16px;border:none;cursor:pointer;font-size:11px;font-weight:600;background:${activeZone==='KRS'?'#3a7bd5':'transparent'};color:${activeZone==='KRS'?'#fff':'#555'}">KRS</button>
       <button onclick="switchZone('SLK')" style="padding:5px 14px;border-radius:16px;border:none;cursor:pointer;font-size:11px;font-weight:600;background:${activeZone==='SLK'?'#e05c3a':'transparent'};color:${activeZone==='SLK'?'#fff':'#555'}">SLK</button>
       <button onclick="switchZone('TOTAL')" style="padding:5px 14px;border-radius:16px;border:none;cursor:pointer;font-size:11px;font-weight:600;background:${activeZone==='TOTAL'?'#5bcea6':'transparent'};color:${activeZone==='TOTAL'?'#0a0c12':'#555'}">TOTAL</button>
@@ -1247,20 +1643,20 @@ function renderGrafik(){
   </div>
 
   <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px">
-    <div style="background:#131620;border:1px solid #1e2231;border-radius:10px;padding:12px">
-      <div style="font-size:9px;color:#555;letter-spacing:.06em;margin-bottom:4px">TOTAL ${selYear}${pctBadge(curYPct)}</div>
+    <div style="background:var(--bg3);border:1px solid var(--border);border-radius:10px;padding:12px">
+      <div style="font-size:9px;color:var(--txt3);letter-spacing:.06em;margin-bottom:4px">TOTAL ${selYear}${pctBadge(curYPct)}</div>
       <div style="font-size:15px;font-weight:700;color:${zc}">${rp(mTotal)}</div>
-      <div style="font-size:10px;color:#444;margin-top:3px">Avg/bulan: ${rp(mAvg)}</div>
+      <div style="font-size:10px;color:var(--txt4);margin-top:3px">Avg/bulan: ${rp(mAvg)}</div>
     </div>
-    <div style="background:#131620;border:1px solid #1e2231;border-radius:10px;padding:12px">
-      <div style="font-size:9px;color:#555;letter-spacing:.06em;margin-bottom:4px">VS TAHUN LALU${pctBadge(curYPct)}</div>
+    <div style="background:var(--bg3);border:1px solid var(--border);border-radius:10px;padding:12px">
+      <div style="font-size:9px;color:var(--txt3);letter-spacing:.06em;margin-bottom:4px">VS TAHUN LALU${pctBadge(curYPct)}</div>
       <div style="font-size:15px;font-weight:700;color:${zc}">${rp(yAvg)}</div>
-      <div style="font-size:10px;color:#444;margin-top:3px">Prev: ${rp(prevYTotal)}</div>
+      <div style="font-size:10px;color:var(--txt4);margin-top:3px">Prev: ${rp(prevYTotal)}</div>
     </div>
   </div>
 
-  <div style="background:#131620;border:1px solid #1e2231;border-radius:10px;padding:12px;margin-bottom:8px">
-    <div style="font-size:9px;color:#555;letter-spacing:.06em;margin-bottom:10px">% PERUBAHAN BULANAN ${selYear} · ${activeZone}</div>
+  <div style="background:var(--bg3);border:1px solid var(--border);border-radius:10px;padding:12px;margin-bottom:8px">
+    <div style="font-size:9px;color:var(--txt3);letter-spacing:.06em;margin-bottom:10px">% PERUBAHAN BULANAN ${selYear} · ${activeZone}</div>
     <div style="display:flex;gap:8px;align-items:center;margin-bottom:10px">
       <select class="cs" style="flex:1" onchange="window._pctMonth=+this.value;render()">
         ${MONTHS.map((m,i)=>`<option value="${i}"${(window._pctMonth??new Date().getMonth())===i?' selected':''}>${m}</option>`).join('')}
@@ -1273,14 +1669,14 @@ function renderGrafik(){
       const prevPv=pi===0?(()=>{const py=selYear-1;return activeZone==='TOTAL'?getZoneTotal('KRS',py,11)+getZoneTotal('SLK',py,11):grafikMembers().reduce((s,m)=>s+(appData.payments?.[getKey(activeZone,m,py,11)]||0),0);})():mData[prevPi];
       const badge=pctBadge(pp);
       return `<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
-        <div style="background:#0e1018;border:1px solid #1e2231;border-radius:8px;padding:10px">
-          <div style="font-size:9px;color:#555;margin-bottom:4px">${MONTHS[pi]} ${selYear}</div>
+        <div style="background:var(--bg2);border:1px solid var(--border);border-radius:8px;padding:10px">
+          <div style="font-size:9px;color:var(--txt3);margin-bottom:4px">${MONTHS[pi]} ${selYear}</div>
           <div style="font-size:15px;font-weight:700;color:${zc}">${rp(pv)}</div>
         </div>
-        <div style="background:#0e1018;border:1px solid #1e2231;border-radius:8px;padding:10px">
-          <div style="font-size:9px;color:#555;margin-bottom:4px">VS ${pi===0?'Des '+(selYear-1):MONTHS[prevPi]}</div>
-          <div style="font-size:13px;font-weight:700;color:#ccc">${rp(prevPv)}</div>
-          <div style="margin-top:4px">${badge||'<span style="font-size:11px;color:#555">— Tidak ada data</span>'}</div>
+        <div style="background:var(--bg2);border:1px solid var(--border);border-radius:8px;padding:10px">
+          <div style="font-size:9px;color:var(--txt3);margin-bottom:4px">VS ${pi===0?'Des '+(selYear-1):MONTHS[prevPi]}</div>
+          <div style="font-size:13px;font-weight:700;color:var(--txt)">${rp(prevPv)}</div>
+          <div style="margin-top:4px">${badge||'<span style="font-size:11px;color:var(--txt3)">— Tidak ada data</span>'}</div>
         </div>
       </div>`;
     })()}
@@ -1362,12 +1758,12 @@ function renderLog(){
   const moOpts=`<option value="">Semua Bulan</option>`+MONTHS.map((m,i)=>`<option value="${i}"${logMonth===i?' selected':''}>${m}</option>`).join('');
 
   const logItems=filtered.length===0
-    ?`<div style="text-align:center;padding:30px;color:#555;font-size:13px">📋 Tidak ada log ditemukan</div>`
+    ?`<div style="text-align:center;padding:30px;color:var(--txt3);font-size:13px">📋 Tidak ada log ditemukan</div>`
     :filtered.slice(0,150).map(l=>{
       const d=new Date(l.ts);
       const dt=`${d.toLocaleDateString('id-ID')} ${d.toLocaleTimeString('id-ID',{hour:'2-digit',minute:'2-digit'})}`;
       const isPayLog=l.action&&(l.action.includes('💰')||l.action.includes('🗑️ Hapus bayar')||l.action.includes('🆓'));
-      return `<div class="log-item" style="${isPayLog?'border-left:2px solid #5bcea622':'border-left:2px solid #1e2231'}">
+      return `<div class="log-item" style="${isPayLog?'border-left:2px solid #5bcea622':'border-left:2px solid var(--border)'}">
         <div class="log-time">${dt} · ${l.user||'—'}</div>
         <div class="log-action">${l.action}</div>
         ${l.detail?`<div class="log-detail">${l.detail}</div>`:''}
@@ -1379,10 +1775,10 @@ function renderLog(){
     <div style="display:flex;gap:6px">
       <select class="cs" style="flex:1" onchange="window._logYear=this.value;render()">${yrOpts}</select>
       <select class="cs" style="flex:1" onchange="window._logMonth=this.value===''?'':+this.value;render()">${moOpts}</select>
-      <button onclick="window._logSearch='';window._logYear='';window._logMonth='';render()" style="background:#1e2231;border:none;color:#555;padding:6px 10px;border-radius:7px;cursor:pointer;font-size:11px">Reset</button>
+      <button onclick="window._logSearch='';window._logYear='';window._logMonth='';render()" style="background:#1e2231;border:none;color:var(--txt3);padding:6px 10px;border-radius:7px;cursor:pointer;font-size:11px">Reset</button>
     </div>
   </div>
-  <div style="font-size:10px;color:#555;margin-bottom:10px;letter-spacing:.06em">${filtered.length} dari ${logs.length} LOG · Edit non-bayar dihapus otomatis 7 hari</div>
+  <div style="font-size:10px;color:var(--txt3);margin-bottom:10px;letter-spacing:.06em">${filtered.length} dari ${logs.length} LOG · Edit non-bayar dihapus otomatis 7 hari</div>
   ${logItems}`;
 }
 
@@ -1435,13 +1831,15 @@ function renderMembers(){
     const freeBtn=!membersLocked?`<button onclick="openFreeModal('${zone}','${name.replace(/'/g,"\'")}') " style="background:${isFreeNow?'#0a2a18':'none'};border:1px solid ${isFreeNow?'#5bcea6':'#1e3a5f'};color:${isFreeNow?'#5bcea6':'#444'};padding:4px 8px;border-radius:5px;cursor:pointer;font-size:10px;flex-shrink:0">🆓</button>`:'';
     const delBtn=!membersLocked?`<button class="delbtn" onclick="deleteMember('${zone}','${name.replace(/'/g,"\'")}') " style="flex-shrink:0">✕</button>`:'';
     const ipLink=info.ip?`<a href="${info.ip.startsWith('http')?info.ip:'http://'+info.ip}" target="_blank" rel="noopener" style="color:#3a7bd5;font-size:10px;text-decoration:none;border:1px solid #1e3a5f;padding:2px 6px;border-radius:4px;flex-shrink:0;font-family:'DM Mono',monospace" onclick="event.stopPropagation()">🔗 ${info.ip}</a>`:'';
+    const tarifBadge=info.tarif?`<span style="background:var(--bg3);border:1px solid var(--border);color:var(--txt3);font-size:9px;padding:2px 6px;border-radius:4px;flex-shrink:0">${rp(info.tarif)}</span>`:'';
     const hasActions=!membersLocked;
     return `<div class="mem-row" style="flex-direction:column;align-items:stretch;gap:5px">
       <div style="display:flex;align-items:center;gap:6px">
         <span class="mem-num">${i+1}.</span>
         ${idBadge}
-        <span class="mem-name-txt">${name}</span>
+        <span class="mem-name-txt" onclick="event.stopPropagation();openRiwayat('${zone}','${name.replace(/'/g,'\'')}')" style="cursor:pointer">${name}</span>
         ${freeBadge}
+        ${tarifBadge}
         ${ipLink}
       </div>
       ${hasActions?`<div style="display:flex;gap:5px;justify-content:flex-end">${freeBtn}${editBtn}${delBtn}</div>`:''}
@@ -1453,17 +1851,19 @@ function renderMembers(){
 
   // Sort controls
   const sortLabels={'name-asc':'Nama A-Z','name-desc':'Nama Z-A','id-asc':'ID ↑','id-desc':'ID ↓','ip-asc':'IP ↑','ip-desc':'IP ↓'};
-  const sortBtns=Object.entries(sortLabels).map(([k,l])=>`<button onclick="window._memberSort='${k}';render()" style="padding:4px 9px;border-radius:10px;border:none;cursor:pointer;font-size:10px;background:${sortMode===k?'#3a7bd5':'#1e2231'};color:${sortMode===k?'#fff':'#555'}">${l}</button>`).join('');
+  const sortBtns=Object.entries(sortLabels).map(([k,l])=>`<button onclick="window._memberSort='${k}';render()" style="padding:4px 9px;border-radius:10px;border:none;cursor:pointer;font-size:10px;background:${sortMode===k?'#3a7bd5':"var(--bg3)"};color:${sortMode===k?'#fff':"var(--txt3)"}">${l}</button>`).join('');
 
   const addForm=membersLocked?'':`<div class="add-form">
     <div class="af-title">TAMBAH MEMBER BARU KE ${zone}</div>
     <div class="af-grid">
-      <div><div style="font-size:10px;color:#555;margin-bottom:4px">NAMA</div>
+      <div><div style="font-size:10px;color:var(--txt3);margin-bottom:4px">NAMA</div>
         <input class="af-input" id="af-name" placeholder="Nama member" onkeydown="if(event.key==='Enter')addMember()"/></div>
-      <div><div style="font-size:10px;color:#555;margin-bottom:4px">ID PELANGGAN</div>
+      <div><div style="font-size:10px;color:var(--txt3);margin-bottom:4px">ID PELANGGAN</div>
         <input class="af-input" id="af-id" placeholder="Opsional"/></div>
-      <div style="grid-column:span 2"><div style="font-size:10px;color:#555;margin-bottom:4px">IP / LINK ROUTER</div>
+      <div style="grid-column:span 2"><div style="font-size:10px;color:var(--txt3);margin-bottom:4px">IP / LINK ROUTER</div>
         <input class="af-input" id="af-ip" placeholder="192.168.x.x atau http://..."/></div>
+      <div><div style="font-size:10px;color:var(--txt3);margin-bottom:4px">TARIF (×1000)</div>
+        <input class="af-input" id="af-tarif" type="number" inputmode="numeric" placeholder="Contoh: 100"/></div>
     </div>
     <button style="width:100%;background:${zc};color:#fff;border:none;padding:10px;border-radius:8px;font-size:13px;font-weight:600;cursor:pointer" onclick="addMember()">+ Tambah ke ${zone}</button>
   </div>`;
@@ -1471,7 +1871,7 @@ function renderMembers(){
   // Recycle bin content for this zone
   const deletedList=Object.entries(appData.deletedMembers||{}).filter(([k])=>k.startsWith(zone+'__'));
   const deletedCards=deletedList.length===0
-    ?`<div style="text-align:center;padding:30px;color:#555;font-size:12px">🗑️ Recycle bin kosong</div>`
+    ?`<div style="text-align:center;padding:30px;color:var(--txt3);font-size:12px">🗑️ Recycle bin kosong</div>`
     :deletedList.sort((a,b)=>b[1].deletedAt-a[1].deletedAt).map(([k,d])=>{
       const dt=new Date(d.deletedAt).toLocaleDateString('id-ID');
       const payCount=Object.keys(d.payments||{}).length;
@@ -1488,22 +1888,22 @@ function renderMembers(){
     }).join('');
 
   return `<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
-    <div style="display:flex;gap:3px;background:#131620;padding:3px;border-radius:24px;border:1px solid #1e2231">
-      <button onclick="newMemberZone='KRS';search='';window._memberTab='active';render()" style="padding:6px 16px;border-radius:20px;border:none;cursor:pointer;font-size:11px;font-weight:600;background:${zone==='KRS'?'#3a7bd5':'transparent'};color:${zone==='KRS'?'#fff':'#555'}">KRS <span style="opacity:.6;font-size:10px">(${appData.krsMembers.length})</span></button>
-      <button onclick="newMemberZone='SLK';search='';window._memberTab='active';render()" style="padding:6px 16px;border-radius:20px;border:none;cursor:pointer;font-size:11px;font-weight:600;background:${zone==='SLK'?'#e05c3a':'transparent'};color:${zone==='SLK'?'#fff':'#555'}">SLK <span style="opacity:.6;font-size:10px">(${appData.slkMembers.length})</span></button>
+    <div style="display:flex;gap:3px;background:var(--bg3);padding:3px;border-radius:24px;border:1px solid var(--border)">
+      <button onclick="newMemberZone='KRS';search='';window._memberTab='active';render()" style="padding:6px 16px;border-radius:20px;border:none;cursor:pointer;font-size:11px;font-weight:600;background:${zone==='KRS'?'#3a7bd5':'transparent'};color:${zone==='KRS'?'#fff':"var(--txt3)"}">KRS <span style="opacity:.6;font-size:10px">(${appData.krsMembers.length})</span></button>
+      <button onclick="newMemberZone='SLK';search='';window._memberTab='active';render()" style="padding:6px 16px;border-radius:20px;border:none;cursor:pointer;font-size:11px;font-weight:600;background:${zone==='SLK'?'#e05c3a':'transparent'};color:${zone==='SLK'?'#fff':"var(--txt3)"}">SLK <span style="opacity:.6;font-size:10px">(${appData.slkMembers.length})</span></button>
     </div>
     ${lockBtn}
   </div>
-  <div style="display:flex;gap:4px;margin-bottom:10px;background:#0e1018;padding:3px;border-radius:20px;border:1px solid #1e2231">
-    <button onclick="window._memberTab='active';render()" style="flex:1;padding:6px;border-radius:16px;border:none;cursor:pointer;font-size:11px;font-weight:600;background:${memberTab==='active'?zc:'transparent'};color:${memberTab==='active'?'#fff':'#555'}">👥 Aktif (${mems.length})</button>
-    <button onclick="window._memberTab='deleted';render()" style="flex:1;padding:6px;border-radius:16px;border:none;cursor:pointer;font-size:11px;font-weight:600;background:${memberTab==='deleted'?'#e05c3a':'transparent'};color:${memberTab==='deleted'?'#fff':'#555'}">🗑️ Terhapus (${deletedList.length})</button>
+  <div style="display:flex;gap:4px;margin-bottom:10px;background:var(--bg2);padding:3px;border-radius:20px;border:1px solid var(--border)">
+    <button onclick="window._memberTab='active';render()" style="flex:1;padding:6px;border-radius:16px;border:none;cursor:pointer;font-size:11px;font-weight:600;background:${memberTab==='active'?zc:'transparent'};color:${memberTab==='active'?'#fff':"var(--txt3)"}">👥 Aktif (${mems.length})</button>
+    <button onclick="window._memberTab='deleted';render()" style="flex:1;padding:6px;border-radius:16px;border:none;cursor:pointer;font-size:11px;font-weight:600;background:${memberTab==='deleted'?'#e05c3a':'transparent'};color:${memberTab==='deleted'?'#fff':"var(--txt3)"}">🗑️ Terhapus (${deletedList.length})</button>
   </div>
   ${memberTab==='deleted'?deletedCards:`
   ${addForm}
   <div style="display:flex;gap:4px;flex-wrap:wrap;margin-bottom:8px">${sortBtns}</div>
   <input class="search-box" placeholder="🔍 Cari nama di ${zone}..." value="${search}" oninput="search=this.value;render()"/>
-  <div style="font-size:10px;color:#444;margin-bottom:8px">${filtered.length} member${search?' ditemukan':''} · ${zone}</div>
-  ${rows||'<div style="text-align:center;padding:20px;color:#555;font-size:12px">Tidak ada member</div>'}
+  <div style="font-size:10px;color:var(--txt4);margin-bottom:8px">${filtered.length} member${search?' ditemukan':''} · ${zone}</div>
+  ${rows||'<div style="text-align:center;padding:20px;color:var(--txt3);font-size:12px">Tidak ada member</div>'}
   `}
 `;
 }
@@ -1552,9 +1952,9 @@ function renderOperasional(){
   </div>
 
   <div class="ops-card">
-    <div style="font-size:10px;color:#555;letter-spacing:.06em;margin-bottom:10px">PENGELUARAN OPERASIONAL</div>
+    <div style="font-size:10px;color:var(--txt3);letter-spacing:.06em;margin-bottom:10px">PENGELUARAN OPERASIONAL</div>
     ${itemRows}
-    <button onclick="addOpsItem()" style="width:100%;background:#0a1a2a;border:1px dashed #1e3a5f;color:#3a7bd5;padding:9px;border-radius:8px;cursor:pointer;font-size:12px;margin-top:6px">+ Tambah Item</button>
+    <button onclick="addOpsItem()" style="width:100%;background:var(--bg3);border:1px dashed #1e3a5f;color:#3a7bd5;padding:9px;border-radius:8px;cursor:pointer;font-size:12px;margin-top:6px">+ Tambah Item</button>
   </div>
 
   <div class="ops-result">
@@ -1566,7 +1966,7 @@ function renderOperasional(){
       <span class="ops-result-lbl">📥 Pendapatan SLK</span>
       <span class="ops-result-val" style="color:#e05c3a">${rp(slkTotal)}</span>
     </div>
-    <div class="ops-result-row" style="border-top:2px solid #1e2231;margin-top:4px">
+    <div class="ops-result-row" style="border-top:2px solid var(--border);margin-top:4px">
       <span class="ops-result-lbl" style="color:#5bcea6">💰 Pendapatan Kotor</span>
       <span class="ops-result-val" style="color:#5bcea6;font-size:15px">${rp(grossIncome)}</span>
     </div>
@@ -1801,13 +2201,14 @@ function addMember(){
   const name=(document.getElementById('af-name')?.value||'').trim().toUpperCase();
   const id=(document.getElementById('af-id')?.value||'').trim();
   const ip=(document.getElementById('af-ip')?.value||'').trim();
+  const tarif=+(document.getElementById('af-tarif')?.value||0)||undefined;
   if(!name){showToast('Nama tidak boleh kosong','err');return;}
   const list=newMemberZone==='KRS'?appData.krsMembers:appData.slkMembers;
   if(list.includes(name)){showToast(`${name} sudah ada!`,'err');return;}
   list.push(name);list.sort();
   const k=newMemberZone+'__'+name;
   if(!appData.memberInfo) appData.memberInfo={};
-  if(id||ip) appData.memberInfo[k]={id,ip};
+  if(id||ip||tarif) appData.memberInfo[k]={id,ip,...(tarif?{tarif}:{})};
   saveDB({action:`➕ Tambah member ${newMemberZone} - ${name}`,detail:id?`ID: ${id}${ip?', IP: '+ip:''}`:''});
   showToast(`${name} ditambahkan ke ${newMemberZone}!`);
   render();
@@ -1897,6 +2298,7 @@ function openEditMember(zone,name){
   document.getElementById('em-name').value=name;
   document.getElementById('em-id').value=info.id||'';
   document.getElementById('em-ip').value=info.ip||'';
+  document.getElementById('em-tarif').value=info.tarif||'';
   document.getElementById('em-original-name').value=name;
   document.getElementById('em-zone').value=zone;
   document.getElementById('edit-member-modal').style.display='flex';
@@ -1908,6 +2310,7 @@ function saveEditMember(){
   const newName=document.getElementById('em-name').value.trim().toUpperCase();
   const newId=document.getElementById('em-id').value.trim();
   const newIp=document.getElementById('em-ip').value.trim();
+  const newTarif=document.getElementById('em-tarif').value.trim();
   if(!newName){showToast('Nama tidak boleh kosong','err');return;}
   const list=zone==='KRS'?appData.krsMembers:appData.slkMembers;
   const idx=list.indexOf(originalName);
@@ -1930,11 +2333,11 @@ function saveEditMember(){
       const oldInfoKey=zone+'__'+originalName;
       const info=appData.memberInfo[oldInfoKey]||{};
       delete appData.memberInfo[oldInfoKey];
-      appData.memberInfo[zone+'__'+newName]={...info,id:newId,ip:newIp};
+      appData.memberInfo[zone+'__'+newName]={...info,id:newId,ip:newIp,...(newTarif?{tarif:+newTarif}:{tarif:undefined})};
     }
   } else {
     if(!appData.memberInfo) appData.memberInfo={};
-    appData.memberInfo[zone+'__'+newName]={id:newId,ip:newIp};
+    appData.memberInfo[zone+'__'+newName]={id:newId,ip:newIp,...(newTarif?{tarif:+newTarif}:{tarif:undefined})};
   }
   closeModal('edit-member-modal');
   saveDB({action:`✏️ Edit member ${zone}`,detail:`${originalName} → ${newName}${newId?' | ID:'+newId:''}${newIp?' | IP:'+newIp:''}`});
@@ -2235,6 +2638,8 @@ function doUpdate(){
 function installPWA(){if(!deferredPrompt)return;deferredPrompt.prompt();deferredPrompt.userChoice.then(()=>{deferredPrompt=null;render();});}
 
 // Init zone color
+// Apply saved theme
+if(!darkMode) document.body.classList.add('light');
 setZoneColor('KRS');
 </script>
 </body>
