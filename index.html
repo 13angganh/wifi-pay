@@ -70,7 +70,7 @@ img{pointer-events:none}
 .lf-input:focus{border-color:var(--zc)}
 .lf-btn{width:100%;background:#3a7bd5;color:#fff;border:none;padding:12px;border-radius:8px;font-size:14px;font-weight:600;cursor:pointer;transition:opacity .2s;margin-bottom:10px}
 .lf-btn:active{opacity:.8}
-.lf-btn.secondary{background:var(--bg3);color:var(--txt2);border:1px solid var(--border)}
+.lf-btn.secondary{background:var(--bg3);color:var(--txt);border:1px solid var(--border)}
 .lf-err{font-size:11px;color:#e05c5c;text-align:center;min-height:16px;margin-bottom:8px}
 .lf-switch{font-size:11px;color:var(--txt3);text-align:center}
 .lf-switch span{color:#3a7bd5;cursor:pointer}
@@ -126,8 +126,8 @@ img{pointer-events:none}
 .mcard.expanded{border-color:var(--zc)}
 .mc-top{display:flex;align-items:center;gap:8px;padding:10px 12px;cursor:pointer}
 .mc-id{font-size:9px;color:#3a7bd5;background:#1e2a4022;border:1px solid #3a7bd522;padding:2px 6px;border-radius:4px;cursor:pointer;text-decoration:none;flex-shrink:0}
-.mc-id.no-link{color:#444;background:transparent;border-color:#1e2231;cursor:default;pointer-events:none}
-.mc-num{font-size:10px;color:var(--txt5);width:18px;flex-shrink:0}
+.mc-id.no-link{color:var(--txt4);background:transparent;border-color:var(--border);cursor:default;pointer-events:none}
+.mc-num{font-size:10px;color:var(--txt4);width:18px;flex-shrink:0}
 .mc-name{font-size:13px;font-weight:500;flex:1}
 .mc-tag{font-size:9px;padding:2px 7px;border-radius:10px;flex-shrink:0}
 .tpaid{background:#0d2b1f;color:#5bcea6;border:1px solid #5bcea622}
@@ -215,7 +215,7 @@ img{pointer-events:none}
 /* ── RECYCLE BIN ── */
 .del-card{background:#0e1018;border:1px solid #e05c5c22;border-radius:10px;padding:10px 12px;margin-bottom:8px;display:flex;justify-content:space-between;align-items:center;gap:8px}
 .del-card-name{font-size:13px;color:var(--txt2);flex:1}
-.del-card-info{font-size:10px;color:#444}
+.del-card-info{font-size:10px;color:var(--txt4)}
 .restore-btn{background:#0a2a18;border:1px solid #5bcea655;color:#5bcea6;padding:5px 10px;border-radius:6px;cursor:pointer;font-size:11px;flex-shrink:0}
 
 /* ── OPERASIONAL ── */
@@ -302,7 +302,7 @@ img{pointer-events:none}
       <button onclick="saveFreeModal()" style="flex:1;background:#0a2a18;border:1px solid #5bcea6;color:#5bcea6;padding:10px;border-radius:8px;cursor:pointer;font-weight:600;font-size:12px">✅ Simpan Free</button>
       <button onclick="removeFreeModal(document.getElementById('fm-zone').value,document.getElementById('fm-name').value)" style="flex:1;background:#1f0d0d;border:1px solid #e05c5c;color:#e05c5c;padding:10px;border-radius:8px;cursor:pointer;font-weight:600;font-size:12px">💳 Kembalikan Berbayar</button>
     </div>
-    <button onclick="closeFreeModal()" style="width:100%;margin-top:8px;background:none;border:1px solid #1e2231;color:var(--txt4);padding:8px;border-radius:8px;cursor:pointer;font-size:12px">Batal</button>
+    <button onclick="closeFreeModal()" style="width:100%;margin-top:8px;background:none;border:1px solid var(--border);color:var(--txt4);padding:8px;border-radius:8px;cursor:pointer;font-size:12px">Batal</button>
   </div>
 </div>
 
@@ -327,7 +327,7 @@ img{pointer-events:none}
         <div style="font-size:11px;color:var(--txt4);margin-top:2px" id="remembered-email"></div>
       </div>
       <button class="lf-btn" id="btn-lanjut" onclick="loginRemembered()">🚀 Lanjutkan</button>
-      <div style="text-align:center;margin:12px 0;font-size:11px;color:#444">atau</div>
+      <div style="text-align:center;margin:12px 0;font-size:11px;color:var(--txt4)">atau</div>
       <button class="lf-btn secondary" onclick="showSwitchAccount()">↔ Ganti Akun</button>
       <div class="lf-err" id="lr-err"></div>
     </div>
@@ -376,7 +376,7 @@ img{pointer-events:none}
       </div>
     </div>
     <div class="hdr-row2">
-      <span><span class="sync-dot" id="sdot"></span><span style="font-size:10px;color:#444" id="sync-lbl">sync...</span></span>
+      <span><span class="sync-dot" id="sdot"></span><span style="font-size:10px;color:var(--txt4)" id="sync-lbl">sync...</span></span>
       <button class="hbtn" onclick="showShareModal()">📤 Share</button>
       <button class="hbtn" onclick="showExportModal()">⬇ Export</button>
       <button class="hbtn" onclick="document.getElementById('imp-file').click()">⬆ Import</button>
@@ -469,9 +469,9 @@ img{pointer-events:none}
 <div class="modal-bg" id="account-modal" style="display:none" onclick="if(event.target===this)closeModal('account-modal')">
   <div class="modal">
     <div class="modal-title">👤 Akun<button class="modal-close" onclick="closeModal('account-modal')">✕</button></div>
-    <div style="background:#131620;border-radius:8px;padding:12px;margin-bottom:14px">
-      <div style="font-size:10px;color:var(--txt3);margin-bottom:4px">LOGIN SEBAGAI</div>
-      <div style="font-size:13px" id="acc-email-display"></div>
+    <div style="background:var(--bg3);border:1px solid var(--border);border-radius:8px;padding:12px;margin-bottom:14px">
+      <div style="font-size:10px;color:var(--txt3);letter-spacing:.06em;margin-bottom:4px">LOGIN SEBAGAI</div>
+      <div style="font-size:13px;color:var(--txt);font-weight:500" id="acc-email-display"></div>
     </div>
     <button class="lf-btn secondary" onclick="switchAccount()" style="margin-bottom:8px">↔ Ganti Akun</button>
     <button class="lf-btn" style="background:#1f0d0d;color:#e05c5c;border:1px solid #e05c5c33" onclick="doLogout()">Keluar</button>
@@ -1340,7 +1340,7 @@ function renderEntry(){
     const info=getInfo(name);
     const exp=expandedCard===name;
     const idEl=info.id?(info.ip?`<a class="mc-id" href="${info.ip.startsWith('http')?info.ip:'http://'+info.ip}" target="_blank">${info.id}</a>`:`<span class="mc-id no-link">${info.id}</span>`):'';
-    const tagEl=freeMember?`<span class="mc-tag" style="background:#0a3a25;color:#5bcea6;border-color:#5bcea633;font-size:9px">🆓</span>`:val>0?`<span class="mc-tag tpaid">✓</span>`:val===null?`<span class="mc-tag tunpaid">✕</span>`:`<span style="font-size:9px;color:#444">○</span>`;
+    const tagEl=freeMember?`<span class="mc-tag" style="background:#0a3a25;color:#5bcea6;border-color:#5bcea633;font-size:9px">🆓</span>`:val>0?`<span class="mc-tag tpaid">✓</span>`:val===null?`<span class="mc-tag tunpaid">✕</span>`:`<span style="font-size:9px;color:var(--txt4)">○</span>`;
     // Bulan entri khusus (bisa beda dari selMonth)
     const entryYear=window._entryYear?.[name]??selYear;
     const entryMonth=window._entryMonth?.[name]??selMonth;
@@ -1366,11 +1366,12 @@ function renderEntry(){
         <input class="mc-date" type="date" value="${info['date_'+entryYear+'_'+entryMonth]||''}" data-field="date_${entryYear}_${entryMonth}" data-name="${name}" onchange="saveInfoField(this)"/>
       </div>
       <div class="mc-row"><span class="mc-label">QUICK</span>
-        <div class="qrow">${(()=>{const info2=getInfo(name);const tarif=info2.tarif;const tarifBtn=tarif?`<button class="qb" style="border-color:var(--zc);color:var(--zc);font-weight:700" onclick="quickEntryPay('${name}',${tarif})">${tarif} ★</button>`:'';const others=QUICK.filter(a=>a!==tarif).map(a=>`<button class="qb" onclick="quickEntryPay('${name}',${a})">${a}</button>`).join('');return tarifBtn+others;})()}</div>
-      </div>`}
+        <div class="qrow">${(()=>{const info2=getInfo(name);const tarif=info2.tarif;const tarifBtn=tarif?`<button class="qb" style="border-color:var(--zc);color:var(--zc);font-weight:700" onclick="quickEntryPay('${name}',${tarif})">${tarif} ★</button>`:'<span style="font-size:9px;color:var(--txt4);align-self:center">★ Belum ada tarif</span>';const others=QUICK.filter(a=>a!==tarif).map(a=>`<button class="qb" onclick="quickEntryPay('${name}',${a})">${a}</button>`).join('');return tarifBtn+others;})()}</div>
+      </div>
+      ${(()=>{const info2=getInfo(name);return !info2.tarif?'<div style="font-size:9px;color:var(--txt4);margin-top:-4px;margin-bottom:4px">💡 Set tarif di menu <b style=\"color:var(--txt3)\">Member → ✏️ Edit</b></div>':'';})()}`}
     </div>`:'';
     const entLocked=globalLocked||(lockedEntries[activeZone+'__'+name]===true);
-    const lockEntryBtn=`<button onclick="event.stopPropagation();toggleEntryLock('${activeZone}','${name.replace(/'/g,"\'")}') " style="background:none;border:none;cursor:pointer;font-size:13px;padding:2px 4px;color:${entLocked?'#5bcea6':'#333'};flex-shrink:0" title="${entLocked?'Terkunci':'Tidak terkunci'}">${entLocked?'🔒':'🔓'}</button>`;
+    const lockEntryBtn=`<button onclick="event.stopPropagation();toggleEntryLock('${activeZone}','${name.replace(/'/g,"\'")}') " style="background:none;border:none;cursor:pointer;font-size:13px;padding:2px 4px;color:${entLocked?'#5bcea6':"var(--txt4)"};flex-shrink:0" title="${entLocked?'Terkunci':'Tidak terkunci'}">${entLocked?'🔒':'🔓'}</button>`;
     return `<div class="mcard${exp?' expanded':''}" id="card-${name.replace(/\s/g,'_')}">
       <div class="mc-top" onclick="toggleCard('${name}')">
         ${idEl}<span class="mc-num">${i+1}</span>
@@ -1378,7 +1379,7 @@ function renderEntry(){
         ${val!==null?`<span style="font-size:11px;color:#5bcea6">${val.toLocaleString('id-ID')}</span>`:''}
         ${tagEl}
         ${lockEntryBtn}
-        <span style="color:#333;font-size:12px;margin-left:2px">${exp?'▲':'▼'}</span>
+        <span style="color:var(--txt4);font-size:12px;margin-left:2px">${exp?'▲':'▼'}</span>
       </div>${body}</div>`;
   }).join('');
   return `${banner}
@@ -1444,7 +1445,7 @@ function renderRekap(){
     </tr></thead>
     <tbody>${rows}</tbody>
     <tfoot><tr style="background:var(--bg3);border-top:2px solid var(--border)">
-      <td colspan="2" class="stk" style="left:0;font-size:10px;color:var(--txt4);padding-left:8px;background:#111318">TOTAL</td>
+      <td colspan="2" class="stk" style="left:0;font-size:10px;color:var(--txt4);padding-left:8px;background:var(--bg3)">TOTAL</td>
       ${ftCells}
       <td style="color:var(--zc);font-family:'Syne',sans-serif;font-weight:800">${rp(grand)}</td>
     </tr></tfoot>
@@ -1511,7 +1512,7 @@ function renderTunggakan(){
     ?`<div style="text-align:center;padding:30px;color:#5bcea6;font-size:13px">✅ Semua lunas sampai bulan ini!</div>`
     :nakal.map((x,i)=>{
       const badges=x.unpaid.slice(0,12).map(u=>`<span class="tmonth">${u.label}</span>`).join('');
-      const more=x.unpaid.length>12?`<span class="tmonth" style="color:#888">+${x.unpaid.length-12} lagi</span>`:'';
+      const more=x.unpaid.length>12?`<span class="tmonth" style="color:var(--txt2)">+${x.unpaid.length-12} lagi</span>`:'';
       return `<div class="tcard">
         <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
           <span class="tcard-name">${i+1}. ${x.name}</span>
@@ -1547,9 +1548,9 @@ function renderTunggakan(){
     <select class="cs" onchange="selYear=+this.value;render()">${yrOpts}</select>
   </div>
   <div style="display:flex;gap:4px;margin-bottom:10px;background:var(--bg3);padding:3px;border-radius:20px;border:1px solid var(--border)">
-    <button onclick="window._tunggakanMode='nakal';render()" style="flex:1;padding:7px;border-radius:16px;border:none;cursor:pointer;font-size:11px;font-weight:600;background:${mode==='nakal'?'#e05c3a':'transparent'};color:${mode==='nakal'?'#fff':'#555'}">⚠️ Nunggak (${nakal.length})</button>
-    <button onclick="window._tunggakanMode='rajin';render()" style="flex:1;padding:7px;border-radius:16px;border:none;cursor:pointer;font-size:11px;font-weight:600;background:${mode==='rajin'?'#5bcea6':'transparent'};color:${mode==='rajin'?'#0a0c12':'#555'}">🌟 Rajin (${rajin.length})</button>
-    <button onclick="window._tunggakanMode='free';render()" style="flex:1;padding:7px;border-radius:16px;border:none;cursor:pointer;font-size:11px;font-weight:600;background:${mode==='free'?'#3a5bce':'transparent'};color:${mode==='free'?'#fff':'#555'}">🆓 Free (${freeList.length})</button>
+    <button onclick="window._tunggakanMode='nakal';render()" style="flex:1;padding:7px;border-radius:16px;border:none;cursor:pointer;font-size:11px;font-weight:600;background:${mode==='nakal'?'#e05c3a':'transparent'};color:${mode==='nakal'?'#fff':"var(--txt3)"}">⚠️ Nunggak (${nakal.length})</button>
+    <button onclick="window._tunggakanMode='rajin';render()" style="flex:1;padding:7px;border-radius:16px;border:none;cursor:pointer;font-size:11px;font-weight:600;background:${mode==='rajin'?'#5bcea6':'transparent'};color:${mode==='rajin'?'#0a0c12':"var(--txt3)"}">🌟 Rajin (${rajin.length})</button>
+    <button onclick="window._tunggakanMode='free';render()" style="flex:1;padding:7px;border-radius:16px;border:none;cursor:pointer;font-size:11px;font-weight:600;background:${mode==='free'?'#3a5bce':'transparent'};color:${mode==='free'?'#fff':"var(--txt3)"}">🆓 Free (${freeList.length})</button>
   </div>
   <div class="sum-bar" style="margin-bottom:10px">
     <div class="sum-lbl">${mode==='nakal'?'TUNGGAKAN S/D':mode==='rajin'?'LUNAS S/D':'FREE MEMBER'} ${MONTHS[selMonth].toUpperCase()} ${selYear} · ${activeZone}</div>
@@ -1636,9 +1637,9 @@ function renderGrafik(){
   return `<div class="ctrl-row" style="justify-content:space-between;align-items:center">
     <select class="cs" onchange="selYear=+this.value;render()">${yrOpts}</select>
     <div style="display:flex;gap:3px;background:var(--bg3);padding:3px;border-radius:20px;border:1px solid var(--border)">
-      <button onclick="switchZone('KRS')" style="padding:5px 14px;border-radius:16px;border:none;cursor:pointer;font-size:11px;font-weight:600;background:${activeZone==='KRS'?'#3a7bd5':'transparent'};color:${activeZone==='KRS'?'#fff':'#555'}">KRS</button>
-      <button onclick="switchZone('SLK')" style="padding:5px 14px;border-radius:16px;border:none;cursor:pointer;font-size:11px;font-weight:600;background:${activeZone==='SLK'?'#e05c3a':'transparent'};color:${activeZone==='SLK'?'#fff':'#555'}">SLK</button>
-      <button onclick="switchZone('TOTAL')" style="padding:5px 14px;border-radius:16px;border:none;cursor:pointer;font-size:11px;font-weight:600;background:${activeZone==='TOTAL'?'#5bcea6':'transparent'};color:${activeZone==='TOTAL'?'#0a0c12':'#555'}">TOTAL</button>
+      <button onclick="switchZone('KRS')" style="padding:5px 14px;border-radius:16px;border:none;cursor:pointer;font-size:11px;font-weight:600;background:${activeZone==='KRS'?'#3a7bd5':'transparent'};color:${activeZone==='KRS'?'#fff':"var(--txt3)"}">KRS</button>
+      <button onclick="switchZone('SLK')" style="padding:5px 14px;border-radius:16px;border:none;cursor:pointer;font-size:11px;font-weight:600;background:${activeZone==='SLK'?'#e05c3a':'transparent'};color:${activeZone==='SLK'?'#fff':"var(--txt3)"}">SLK</button>
+      <button onclick="switchZone('TOTAL')" style="padding:5px 14px;border-radius:16px;border:none;cursor:pointer;font-size:11px;font-weight:600;background:${activeZone==='TOTAL'?'#5bcea6':'transparent'};color:${activeZone==='TOTAL'?'#0a0c12':"var(--txt3)"}">TOTAL</button>
     </div>
   </div>
 
@@ -1698,7 +1699,7 @@ function renderGrafik(){
 
 function initCharts(){
   const zc=activeZone==='KRS'?'#3a7bd5':activeZone==='SLK'?'#e05c3a':'#5bcea6';
-  const cfg={responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:{callbacks:{label:ctx=>`Rp ${(ctx.raw*1000).toLocaleString('id-ID')}`}}},scales:{x:{grid:{color:'#1e2231'},ticks:{color:'#555',font:{family:'DM Mono',size:10}}},y:{grid:{color:'#1e2231'},ticks:{color:'#555',font:{family:'DM Mono',size:10},callback:v=>'Rp '+(v*1000).toLocaleString('id-ID')}}}};
+  const cfg={responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:{callbacks:{label:ctx=>`Rp ${(ctx.raw*1000).toLocaleString('id-ID')}`}}},scales:{x:{grid:{color:darkMode?'#1e2231':'#d0d4e0'},ticks:{color:darkMode?'#777':'#5a6080',font:{family:'DM Mono',size:10}}},y:{grid:{color:darkMode?'#1e2231':'#d0d4e0'},ticks:{color:darkMode?'#777':'#5a6080',font:{family:'DM Mono',size:10},callback:v=>'Rp '+(v*1000).toLocaleString('id-ID')}}}};
 
   // Monthly
   const mData=MONTHS.map((_,mi)=>{
@@ -1725,7 +1726,7 @@ function initCharts(){
     {label:'KRS',data:kData,borderColor:'#3a7bd5',backgroundColor:'#3a7bd522',borderWidth:2,tension:0.4,fill:false,pointBackgroundColor:'#3a7bd5',pointRadius:3},
     {label:'SLK',data:sData,borderColor:'#e05c3a',backgroundColor:'#e05c3a22',borderWidth:2,tension:0.4,fill:false,pointBackgroundColor:'#e05c3a',pointRadius:3},
     {label:'TOTAL',data:tData,borderColor:'#5bcea6',backgroundColor:'#5bcea622',borderWidth:2,tension:0.4,fill:false,pointBackgroundColor:'#5bcea6',pointRadius:3,borderDash:[4,3]}
-  ]},options:{...cfg,plugins:{legend:{display:true,labels:{color:'#888',font:{family:'DM Mono',size:10},boxWidth:12}},tooltip:{callbacks:{label:ctx=>`${ctx.dataset.label}: Rp ${(ctx.raw*1000).toLocaleString('id-ID')}`}}}}});}
+  ]},options:{...cfg,plugins:{legend:{display:true,labels:{color:darkMode?'#888':'#5a6080',font:{family:'DM Mono',size:10},boxWidth:12}},tooltip:{callbacks:{label:ctx=>`${ctx.dataset.label}: Rp ${(ctx.raw*1000).toLocaleString('id-ID')}`}}}}});}
 }
 
 // ══════════════════════════════════════════
@@ -1775,7 +1776,7 @@ function renderLog(){
     <div style="display:flex;gap:6px">
       <select class="cs" style="flex:1" onchange="window._logYear=this.value;render()">${yrOpts}</select>
       <select class="cs" style="flex:1" onchange="window._logMonth=this.value===''?'':+this.value;render()">${moOpts}</select>
-      <button onclick="window._logSearch='';window._logYear='';window._logMonth='';render()" style="background:#1e2231;border:none;color:var(--txt3);padding:6px 10px;border-radius:7px;cursor:pointer;font-size:11px">Reset</button>
+      <button onclick="window._logSearch='';window._logYear='';window._logMonth='';render()" style="background:var(--bg3);border:1px solid var(--border);color:var(--txt3);padding:6px 10px;border-radius:7px;cursor:pointer;font-size:11px">Reset</button>
     </div>
   </div>
   <div style="font-size:10px;color:var(--txt3);margin-bottom:10px;letter-spacing:.06em">${filtered.length} dari ${logs.length} LOG · Edit non-bayar dihapus otomatis 7 hari</div>
@@ -1825,10 +1826,10 @@ function renderMembers(){
     const isFreeNow=fm&&fm.active;
     const idBadge=info.id
       ?`<span class="mem-id-badge">${info.id}</span>`
-      :'<span class="mem-id-badge" style="color:#333;border-color:#1e2231">—</span>';
+      :'<span class="mem-id-badge" style="color:var(--txt4);border-color:var(--border)">—</span>';
     const freeBadge=isFreeNow?`<span style="background:#0a2a18;border:1px solid #5bcea633;color:#5bcea6;font-size:9px;padding:2px 6px;border-radius:4px;flex-shrink:0">🆓 Free</span>`:'';
     const editBtn=!membersLocked?`<button onclick="openEditMember('${zone}','${name.replace(/'/g,"\'")}') " style="background:none;border:1px solid #1e3a5f;color:#3a7bd5;padding:4px 8px;border-radius:5px;cursor:pointer;font-size:10px;flex-shrink:0">✏️</button>`:'';
-    const freeBtn=!membersLocked?`<button onclick="openFreeModal('${zone}','${name.replace(/'/g,"\'")}') " style="background:${isFreeNow?'#0a2a18':'none'};border:1px solid ${isFreeNow?'#5bcea6':'#1e3a5f'};color:${isFreeNow?'#5bcea6':'#444'};padding:4px 8px;border-radius:5px;cursor:pointer;font-size:10px;flex-shrink:0">🆓</button>`:'';
+    const freeBtn=!membersLocked?`<button onclick="openFreeModal('${zone}','${name.replace(/'/g,"\'")}') " style="background:${isFreeNow?'#0a2a18':'none'};border:1px solid ${isFreeNow?'#5bcea6':'#1e3a5f'};color:${isFreeNow?'#5bcea6':"var(--txt3)"};padding:4px 8px;border-radius:5px;cursor:pointer;font-size:10px;flex-shrink:0">🆓</button>`:'';
     const delBtn=!membersLocked?`<button class="delbtn" onclick="deleteMember('${zone}','${name.replace(/'/g,"\'")}') " style="flex-shrink:0">✕</button>`:'';
     const ipLink=info.ip?`<a href="${info.ip.startsWith('http')?info.ip:'http://'+info.ip}" target="_blank" rel="noopener" style="color:#3a7bd5;font-size:10px;text-decoration:none;border:1px solid #1e3a5f;padding:2px 6px;border-radius:4px;flex-shrink:0;font-family:'DM Mono',monospace" onclick="event.stopPropagation()">🔗 ${info.ip}</a>`:'';
     const tarifBadge=info.tarif?`<span style="background:var(--bg3);border:1px solid var(--border);color:var(--txt3);font-size:9px;padding:2px 6px;border-radius:4px;flex-shrink:0">${rp(info.tarif)}</span>`:'';
@@ -1948,7 +1949,7 @@ function renderOperasional(){
   return `<div class="ctrl-row" style="margin-bottom:10px">
     <select class="cs" onchange="setOpsMonth(this.value,'year')">${yrOpts}</select>
     <select class="cs" onchange="setOpsMonth(this.value,'month')">${moOpts}</select>
-    <span style="font-size:11px;color:#555">${MONTHS[opsMonth]} ${opsYear}</span>
+    <span style="font-size:11px;color:var(--txt3)">${MONTHS[opsMonth]} ${opsYear}</span>
   </div>
 
   <div class="ops-card">
