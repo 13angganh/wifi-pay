@@ -1,4 +1,4 @@
-# WiFi Pay v8.1 — Dokumentasi Lengkap
+# WiFi Pay v9.0 — Dokumentasi Lengkap
 
 **PWA Manajemen Tagihan WiFi**  
 🌐 Deploy ke: Netlify Drop / GitHub Pages / Cloudflare Pages
@@ -49,8 +49,11 @@ Data tersimpan di **Firebase Realtime Database**, bisa diakses dari HP manapun s
 | Dashboard | Ringkasan pemasukan, tunggakan, backup status |
 | Tarif per Member | Set tarif bulanan — tampil sebagai tombol bintang di quick pay |
 | Pencarian Global | Cari member dari semua zona sekaligus |
-| Riwayat 12 Bulan | Tap nama member untuk lihat histori pembayaran |
+| Riwayat Per Tahun | Swipe kiri-kanan antar tahun (2023–sekarang), klik baris untuk langsung entry |
 | Backup Otomatis | Auto backup tanggal 1, tombol manual di Dashboard |
+| Selector Bulan Dashboard | Pilih bulan & tahun di Dashboard untuk lihat data historis |
+| Filter Log | Toggle Semua / Hanya Bayar di menu Log |
+| Banner Lock | Banner merah saat entry terkunci di semua view |
 | Ringkasan WA | Satu tap kirim ringkasan bulan ini ke WhatsApp |
 
 ---
@@ -230,7 +233,31 @@ Ini adalah fitur penting yang perlu dipahami:
 
 ## 9. Changelog
 
-### v8.1 (Maret 2026) — Perbaikan Bug & Konsistensi
+### v9.0 (April 2026) — Fitur Baru & Bug Fix
+
+**Fitur Baru:**
+* Dashboard: Selector bulan+tahun — semua data mengikuti bulan yang dipilih
+* Dashboard: Perbandingan bulan sebelumnya (▲▼%) di kartu KRS & SLK
+* Dashboard: Stats free member bulan yang dipilih
+* Riwayat member: Swipe kiri-kanan per tahun (2023–sekarang+2), navigasi panah, dots tab tahun
+* Riwayat member: Klik baris bulan → langsung lompat ke Entry bulan tersebut
+* Riwayat member: Summary per tahun (X/12 bulan lunas · total nominal)
+* Log: Filter toggle "Semua" vs "Hanya Bayar"
+* Semua search (Entry/Rekap/Log/Member): tidak kehilangan fokus saat mengetik + tombol clear ✕
+* Banner lock merah di semua view saat global lock aktif
+* Konfirmasi "Kembalikan Berbayar" di Free Modal (konsisten dengan hapus lainnya)
+* Pesan offline lebih informatif saat tidak ada koneksi
+
+**Bug Fix:**
+* `goEntry` dari Rekap sekarang membawa tahun yang benar (bukan selalu tahun sekarang)
+* `setView` sekarang reset `filterStatus` — expandedCard dari goEntry selalu tampil
+* `YEARS` array sekarang dinamis (2023 sampai tahun sekarang+2), tidak perlu update manual tiap tahun baru
+* Log: semua log dihapus otomatis 30 hari (sebelumnya log bayar bersifat permanen)
+* Cache SW diupdate ke v13
+
+## 9b. Changelog Lama
+
+### v9.0 (Maret 2026) — Perbaikan Bug & Konsistensi
 
 **Bug Fix:**
 - `saveEditMember` — tidak lagi replace seluruh memberInfo, merge dengan data existing (date fields tidak terhapus)
@@ -287,6 +314,6 @@ Ini adalah fitur penting yang perlu dipahami:
 
 ---
 
-*WiFi Pay v8.1 — Pengelolaan Tagihan WiFi RT/Desa*  
+*WiFi Pay v9.0 — Pengelolaan Tagihan WiFi RT/Desa*  
 *Stack: HTML + Firebase Realtime Database + PWA*  
 *Deploy: Netlify / GitHub Pages / Cloudflare Pages*

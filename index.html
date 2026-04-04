@@ -269,6 +269,39 @@ img{pointer-events:none}
 /* ── ACCOUNT MODAL ── */
 .acc-modal{background:var(--bg2);border:1px solid var(--border);border-radius:14px 14px 0 0;padding:20px;width:100%}
 
+/* ── GLOBAL LOCK BANNER ── */
+#lock-banner{display:none;background:linear-gradient(90deg,#2a0a0a,#1f0d0d);border-bottom:2px solid #e05c5c55;padding:6px 14px;flex-shrink:0;z-index:49;align-items:center;justify-content:space-between;gap:8px}
+#lock-banner.show{display:flex}
+.lock-banner-txt{font-size:10px;color:#e05c5c;letter-spacing:.04em;display:flex;align-items:center;gap:6px}
+.lock-banner-btn{background:none;border:1px solid #e05c5c55;color:#e05c5c;padding:3px 10px;border-radius:5px;cursor:pointer;font-size:10px;flex-shrink:0}
+.lock-banner-btn:active{background:#e05c5c22}
+
+/* ── RIWAYAT SWIPE ── */
+.rw-year-tabs{display:flex;gap:4px;margin-bottom:12px;overflow-x:auto;padding-bottom:4px;scrollbar-width:none}
+.rw-year-tabs::-webkit-scrollbar{display:none}
+.rw-year-tab{padding:5px 14px;border-radius:20px;border:1px solid var(--border);background:none;color:var(--txt3);font-size:11px;cursor:pointer;white-space:nowrap;transition:all .2s;font-family:'DM Mono',monospace}
+.rw-year-tab.active{background:var(--zc);color:#fff;border-color:var(--zc)}
+.rw-nav{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px}
+.rw-nav-btn{background:var(--bg3);border:1px solid var(--border);color:var(--txt2);width:32px;height:32px;border-radius:8px;cursor:pointer;font-size:16px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.rw-nav-btn:active{opacity:.7}
+.rw-nav-btn:disabled{opacity:.25;cursor:default}
+.rw-year-lbl{font-family:'Syne',sans-serif;font-weight:800;font-size:16px;color:var(--txt)}
+.rw-summary{background:var(--bg3);border:1px solid var(--border);border-radius:8px;padding:10px 14px;margin-top:10px;display:flex;justify-content:space-between;align-items:center}
+.rw-summary-lbl{font-size:10px;color:var(--txt3)}
+.rw-summary-val{font-size:13px;font-weight:700;color:var(--zc)}
+.rw-month-row{display:flex;align-items:center;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--border2);cursor:pointer;transition:background .15s;border-radius:4px;margin:0 -4px;padding-left:4px;padding-right:4px}
+.rw-month-row:last-child{border-bottom:none}
+.rw-month-row:active{background:var(--bg3)}
+
+/* ── DASHBOARD SELECTOR ── */
+.dash-month-sel{display:flex;gap:6px;margin-bottom:12px;align-items:center}
+
+/* ── SEARCH BOX WRAPPER ── */
+.search-wrap{position:relative;margin-bottom:10px}
+.search-wrap .search-box{margin-bottom:0;padding-right:36px}
+.search-clear{position:absolute;right:10px;top:50%;transform:translateY(-50%);background:none;border:none;color:var(--txt3);cursor:pointer;font-size:14px;padding:2px 4px;line-height:1}
+.search-clear:active{color:var(--txt)}
+
 /* ── CONFIRM MODAL ── */
 #confirm-modal{position:fixed;inset:0;background:#000b;z-index:9999;display:none;align-items:center;justify-content:center;padding:20px}
 #confirm-modal.open{display:flex}
@@ -399,7 +432,14 @@ img{pointer-events:none}
       <button class="hbtn" onclick="showAccountModal()">👤</button>
     </div>
   </div>
-  <div id="content"></div>
+  <div id="lock-banner">
+  <div class="lock-banner-txt">
+    <span>🔒</span>
+    <span>Entry terkunci — tap KUNCI di header untuk membuka</span>
+  </div>
+  <button class="lock-banner-btn" onclick="toggleGlobalLock()">Buka</button>
+</div>
+<div id="content"></div>
   <div id="bnav">
     <button class="nb on" data-v="dashboard" onclick="setView('dashboard')"><span class="ni">🏠</span>Home</button>
     <button class="nb" data-v="entry" onclick="setView('entry')"><span class="ni">📝</span>Entry</button>
@@ -501,12 +541,22 @@ img{pointer-events:none}
 
 <!-- ══ RIWAYAT MEMBER MODAL ══ -->
 <div id="riwayat-modal" onclick="if(event.target===this)closeRiwayat()">
-  <div class="riwayat-box">
-    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
+  <div class="riwayat-box" id="riwayat-box-inner">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
       <div id="riwayat-title" style="font-family:'Syne',sans-serif;font-weight:800;font-size:15px;color:var(--txt)">Riwayat Bayar</div>
       <button onclick="closeRiwayat()" style="background:none;border:none;color:var(--txt3);font-size:18px;cursor:pointer">✕</button>
     </div>
+    <div class="rw-year-tabs" id="rw-year-tabs"></div>
+    <div class="rw-nav">
+      <button class="rw-nav-btn" id="rw-prev" onclick="riwayatPrevYear()">&#8592;</button>
+      <span class="rw-year-lbl" id="rw-year-lbl"></span>
+      <button class="rw-nav-btn" id="rw-next" onclick="riwayatNextYear()">&#8594;</button>
+    </div>
     <div id="riwayat-content"></div>
+    <div id="riwayat-summary" class="rw-summary" style="display:none">
+      <span class="rw-summary-lbl" id="rw-sum-lbl">—</span>
+      <span class="rw-summary-val" id="rw-sum-val">—</span>
+    </div>
   </div>
 </div>
 
@@ -568,7 +618,7 @@ const db = firebase.database();
 // CONSTANTS
 // ══════════════════════════════════════════
 const MONTHS=["Jan","Feb","Mar","Apr","Mei","Jun","Jul","Agt","Sep","Okt","Nov","Des"];
-const YEARS=[2023,2024,2025,2026,2027,2028];
+const YEARS=(()=>{const y=[];for(let i=2023;i<=new Date().getFullYear()+2;i++)y.push(i);return y;})();
 const QUICK=[50,80,90,100,150,200];
 function fbKey(s){return s.replace(/\./g,'-').replace(/#/g,'-').replace(/\$/g,'-').replace(/\[/g,'-').replace(/]/g,'-').replace(/\//g,'-');}  // Sanitize Firebase key
 function enc(s){try{return btoa(unescape(encodeURIComponent(s)));}catch(e){return '';}}
@@ -592,6 +642,18 @@ function svgUnlock(){
     +'<line x1="9.5" y1="4" x2="16" y2="1" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>'
     +'<circle cx="16.5" cy="0.8" r="1.3" fill="currentColor"/>'
     +'</svg>';}
+// ── UPDATE LOCK BANNER ──
+function updateLockBanner(){
+  const banner=document.getElementById('lock-banner');
+  const icon=document.getElementById('global-lock-icon');
+  const lbl=document.getElementById('global-lock-lbl');
+  const btn=document.getElementById('global-lock-btn');
+  if(banner) banner.classList.toggle('show', globalLocked);
+  if(icon) icon.innerHTML=globalLocked?svgLock():svgUnlock();
+  if(lbl){lbl.textContent=globalLocked?'KUNCI':'BUKA';lbl.style.color=globalLocked?'#e05c5c':'#5bcea6';}
+  if(btn) btn.style.color=globalLocked?'#e05c5c':'#5bcea6';
+}
+
 
 const DEFAULT_KRS=["ABIL","ADIT","AJI","AKBAR","ALFIN","ANA","ARIFIN","ARPAN","AYU NANDA","B-ANI","B-IKE","B-NINGSIH","B-WULAN","BAGAS","BERI","CECEK","DAYAT","DELLA","DIKA JON","DISTY","DIYAN","EGA","ELLA","ENGGAR","ESRA","FARHAN","FEBI","FEMLI","FERA","FIRLI","GILANG","GO","HABIBAH","HABIL","HALIK","HAMIM","HOLIP","ICAN","IING","IMAM","IMAMAH","INTAN GN","INTAN RIO","JIHAN","LENI","LILIS","LINDA","MAHRUS","MAY","MUHAMMAD","MUIS","NATUL","NIA","NININ","NONIK","NORMA","P-BUDI","POS","PUPUT","QORI","QORI SAS","RAGIL","RANI","RIA","RIFA","RILA","RIRIB","RITA","ROSI","RYAN","SAHYUN","SANTI","SDN","SIFA","SUD","SURYA","TK PGRI","UCI","VINA","VIO","WAHYU","WARSA","WAWAN","WILDA","WILDAN","YENI","ZEN"];
 const DEFAULT_SLK=["AFAN","AIDI","AMIN","ANAS","ANGGUN","ANIS","BAY","CLARA","DAIFI","DHEA","DIKRI","ELIYA","ERFAN","FAHMI","FAIL","FATIA","FIROCH","GUNAWAN","H-MUALIS","HAIKAL","HENDRA","IKROM","INUL","IPUL","IRHAM","LUKMAN","MAHRUS","MAKSUM","MAY","MELLY","NAFIS","NAUFAL","NIA SALAK","NISA","NURIL","OPEK","P-IIL","RIFKI","RINA","ROBI","ROSI","SAMSUDI","SATAM","SHELA","SHOFIA","SOFI","SUKI","SUTIK","UUS","VIVI","WAHYU","WARDA","ZAHDAN"];
@@ -739,6 +801,8 @@ function switchAccount(){
 }
 async function doLogout(){
   closeModal('account-modal');
+  window._dashInitDone=undefined;
+  window._riwayatYear=undefined;
   await auth.signOut();
   localStorage.removeItem('wp_remember_email');
   localStorage.removeItem('wp_remember_name');
@@ -846,17 +910,9 @@ function initDB(){
     // Jika val ada tapi krsMembers belum (masih proses upload) - jangan overwrite
     setSyncStatus('ok');
     render();
-    // Update global lock icon setelah render
-    (()=>{
-      const icon=document.getElementById('global-lock-icon');
-      const lbl=document.getElementById('global-lock-lbl');
-      const btn=document.getElementById('global-lock-btn');
-      if(icon) icon.innerHTML=globalLocked?svgLock():svgUnlock();
-      if(lbl){lbl.textContent=globalLocked?'KUNCI':'BUKA';lbl.style.color=globalLocked?'#e05c5c':'#5bcea6';}
-      if(btn) btn.style.color=globalLocked?'#e05c5c':'#5bcea6';
-    })();
+    updateLockBanner();
     checkAutoBackup();
-  },err=>{setSyncStatus('err');});
+  },err=>{setSyncStatus('err');setSyncOffline();});
 }
 
 function saveDB(logEntry){
@@ -885,6 +941,20 @@ function setSyncStatus(s){
   if(s==='ok'){dot.classList.remove('off');lbl.textContent='tersimpan';}
   else if(s==='err'){dot.classList.add('off');lbl.textContent='gagal sync';}
   else{dot.classList.remove('off');lbl.textContent='menyimpan...';}
+}
+
+function setSyncOffline(){
+  const dot=document.getElementById('sdot');
+  const lbl=document.getElementById('sync-lbl');
+  if(!dot||!lbl)return;
+  dot.classList.add('off');
+  lbl.textContent='offline';
+  // Tampilkan toast sekali
+  if(!window._offlineToastShown){
+    window._offlineToastShown=true;
+    showToast('⚠️ Tidak ada koneksi — data mungkin belum lengkap','err');
+    setTimeout(()=>{window._offlineToastShown=false;},30000);
+  }
 }
 
 // Auth state
@@ -958,15 +1028,12 @@ function isLunas(zone,name,year,month){
 function cleanOldEditLogs(){
   if(!appData.activityLog||!appData.activityLog.length) return;
   const now=Date.now();
-  const sevenDays=7*24*60*60*1000;
+  const thirtyDays=30*24*60*60*1000;
   const before=appData.activityLog.length;
-  appData.activityLog=appData.activityLog.filter(l=>{
-    // Log bayar (mengandung 💰 atau 🗑️ Pay atau Free) - simpan permanen
-    if(l.action&&(l.action.includes('💰')||l.action.includes('🗑️ Hapus bayar')||l.action.includes('🆓')||l.action.includes('Quick Pay'))) return true;
-    // Log edit (non-bayar) - hapus setelah 7 hari
-    if(l.ts&&(now-l.ts)>sevenDays) return false;
-    return true;
-  });
+  // Semua log dihapus setelah 30 hari tanpa terkecuali
+  appData.activityLog=appData.activityLog.filter(l=>!(l.ts&&(now-l.ts)>thirtyDays));
+  // Batas 200 entri sebagai safety net
+  if(appData.activityLog.length>200) appData.activityLog=appData.activityLog.slice(0,200);
   // Simpan jika ada yang dihapus
   if(appData.activityLog.length<before && dbRef){
     dbRef.set(appData);
@@ -1016,46 +1083,156 @@ function doGlobalSearch(q){
 function openRiwayat(zone,name){
   const modal=document.getElementById('riwayat-modal');
   const title=document.getElementById('riwayat-title');
-  const content=document.getElementById('riwayat-content');
-  if(!modal||!title||!content) return;
+  if(!modal||!title) return;
   title.textContent=`📋 ${name} (${zone})`;
-  // Tampilkan 12 bulan terakhir
-  const now=new Date();
-  let yw=now.getFullYear(); let mw=now.getMonth();
-  const rows=[];
-  for(let i=0;i<12;i++){
-    const v=getPay(zone,name,yw,mw);
-    const free=isFree(zone,name,yw,mw);
-    const info=appData.memberInfo?.[zone+'__'+name]||{};
-    const tgl=info['date_'+yw+'_'+mw]||'';
+  window._riwayatZone=zone;
+  window._riwayatName=name;
+  // Default ke tahun sekarang
+  if(!window._riwayatYear) window._riwayatYear=new Date().getFullYear();
+  renderRiwayat(zone,name,window._riwayatYear);
+  modal.classList.add('open');
+  // Setup swipe touch
+  const box=document.getElementById('riwayat-box-inner');
+  if(box){
+    let tx=0;
+    box.ontouchstart=e=>{tx=e.touches[0].clientX;};
+    box.ontouchend=e=>{
+      const dx=e.changedTouches[0].clientX-tx;
+      if(Math.abs(dx)>50){
+        if(dx<0) riwayatNextYear();
+        else riwayatPrevYear();
+      }
+    };
+  }
+}
+
+function renderRiwayat(zone,name,year){
+  const content=document.getElementById('riwayat-content');
+  const sumEl=document.getElementById('riwayat-summary');
+  const sumLbl=document.getElementById('rw-sum-lbl');
+  const sumVal=document.getElementById('rw-sum-val');
+  const yearLbl=document.getElementById('rw-year-lbl');
+  const prevBtn=document.getElementById('rw-prev');
+  const nextBtn=document.getElementById('rw-next');
+  const tabsEl=document.getElementById('rw-year-tabs');
+  if(!content) return;
+
+  const nowYear=new Date().getFullYear();
+  const minYear=YEARS[0];
+  const maxYear=YEARS[YEARS.length-1];
+
+  // Update nav
+  if(yearLbl) yearLbl.textContent=year;
+  if(prevBtn) prevBtn.disabled=(year<=minYear);
+  if(nextBtn) nextBtn.disabled=(year>=maxYear);
+
+  // Render tabs
+  if(tabsEl){
+    tabsEl.innerHTML=YEARS.map(y=>`<button class="rw-year-tab${y===year?' active':''}" onclick="window._riwayatYear=${y};renderRiwayat('${zone}','${name.replace(/'/g,"\'")}',${y})">${y}</button>`).join('');
+    // Scroll tab aktif ke tengah
+    setTimeout(()=>{
+      const activeTab=tabsEl.querySelector('.rw-year-tab.active');
+      if(activeTab) activeTab.scrollIntoView({behavior:'smooth',block:'nearest',inline:'center'});
+    },50);
+  }
+
+  // Render 12 bulan Jan-Des tahun ini
+  const info=appData.memberInfo?.[zone+'__'+name]||{};
+  let lunas=0; let totalVal=0;
+  const rows=MONTHS.map((mName,mi)=>{
+    const v=getPay(zone,name,year,mi);
+    const free=isFree(zone,name,year,mi);
+    const tgl=info['date_'+year+'_'+mi]||'';
     let statusHtml='';
-    if(free) statusHtml=`<span style="color:#5bcea6;font-size:11px">🆓 Free</span>`;
-    else if(v!==null&&v>0) statusHtml=`<span style="color:#5bcea6;font-size:11px;font-weight:600">${rp(v)}</span>`;
-    else if(v===0) statusHtml=`<span style="color:#3a9e7a;font-size:11px">✓ Akumulasi</span>`;
-    else statusHtml=`<span style="color:#e05c5c;font-size:11px">✕ Belum</span>`;
-    rows.push(`<div class="rw-month-row">
+    let isLunasMonth=false;
+    if(free){
+      statusHtml=`<span style="color:#5bcea6;font-size:11px">🆓 Free</span>`;
+      isLunasMonth=true;
+    } else if(v!==null&&v>0){
+      statusHtml=`<span style="color:#5bcea6;font-size:11px;font-weight:600">${rp(v)}</span>`;
+      isLunasMonth=true; totalVal+=v;
+    } else if(v===0){
+      statusHtml=`<span style="color:#3a9e7a;font-size:11px">✓ Akumulasi</span>`;
+      isLunasMonth=true;
+    } else {
+      statusHtml=`<span style="color:#e05c5c;font-size:11px">✕ Belum</span>`;
+    }
+    if(isLunasMonth&&!free) lunas++;
+
+    // Jangan tampil bulan masa depan di tahun sekarang
+    const nowMonth=new Date().getMonth();
+    const isFuture=(year===nowYear&&mi>nowMonth);
+    if(isFuture) return '';
+
+    return `<div class="rw-month-row" onclick="goEntryFromRiwayat('${zone}','${name.replace(/'/g,"\'")}',${year},${mi})" title="Tap untuk entry bulan ini">
       <div>
-        <div style="font-size:12px;color:var(--txt)">${MONTHS[mw]} ${yw}</div>
+        <div style="font-size:12px;color:var(--txt)">${mName} ${year}</div>
         ${tgl?`<div style="font-size:9px;color:var(--txt4)">${tgl}</div>`:''}
       </div>
       ${statusHtml}
-    </div>`);
-    mw--;
-    if(mw<0){mw=11;yw--;}
+    </div>`;
+  }).filter(Boolean);
+
+  content.innerHTML=rows.join('')||`<div style="text-align:center;padding:20px;color:var(--txt3);font-size:12px">Tidak ada data tahun ${year}</div>`;
+
+  // Summary
+  const totalMonths=rows.length;
+  if(sumEl&&sumLbl&&sumVal){
+    sumEl.style.display='flex';
+    sumLbl.textContent=`${lunas}/${totalMonths} bulan lunas`;
+    sumVal.textContent=rp(totalVal);
   }
-  // Total setahun terakhir
-  const totalNow=new Date();
-  let totVal=0;
-  for(let mi=0;mi<12;mi++) totVal+=getPay(zone,name,totalNow.getFullYear(),mi)||0;
-  content.innerHTML=rows.join('')+`<div style="margin-top:12px;padding:10px;background:var(--bg3);border-radius:8px;display:flex;justify-content:space-between">
-    <span style="font-size:11px;color:var(--txt4)">Total ${totalNow.getFullYear()}</span>
-    <span style="font-size:13px;font-weight:700;color:var(--zc)">${rp(totVal)}</span>
-  </div>`;
-  modal.classList.add('open');
 }
+
+function riwayatPrevYear(){
+  const minYear=YEARS[0];
+  if(window._riwayatYear>minYear){
+    window._riwayatYear--;
+    renderRiwayat(window._riwayatZone,window._riwayatName,window._riwayatYear);
+  }
+}
+
+function riwayatNextYear(){
+  const maxYear=YEARS[YEARS.length-1];
+  if(window._riwayatYear<maxYear){
+    window._riwayatYear++;
+    renderRiwayat(window._riwayatZone,window._riwayatName,window._riwayatYear);
+  }
+}
+
+// Saran O: dari riwayat langsung ke Entry bulan tersebut
+function goEntryFromRiwayat(zone,name,year,month){
+  window._riwayatYear=new Date().getFullYear();
+  closeRiwayat();
+  activeZone=zone;
+  setZoneColor(zone);
+  document.querySelectorAll('.zbtn').forEach(b=>{
+    b.className='zbtn';
+    if(b.textContent===zone){if(zone==='KRS')b.classList.add('krs');else b.classList.add('slk');}
+  });
+  selYear=year; selMonth=month;
+  filterStatus='all';
+  expandedCard=name;
+  search=name;
+  window._entryYear=window._entryYear||{};
+  window._entryMonth=window._entryMonth||{};
+  window._entryYear[name]=year;
+  window._entryMonth[name]=month;
+  currentView='entry';
+  document.querySelectorAll('.nb').forEach(b=>b.classList.toggle('on',b.dataset.v==='entry'));
+  render();
+  setTimeout(()=>{
+    const el=document.getElementById('card-'+name.replace(/\s/g,'_'));
+    if(el) el.scrollIntoView({behavior:'smooth',block:'nearest'});
+  },100);
+}
+
+
 function closeRiwayat(){
   const modal=document.getElementById('riwayat-modal');
   if(modal) modal.classList.remove('open');
+  // Reset tahun agar saat buka member berbeda selalu mulai dari tahun sekarang
+  window._riwayatYear=new Date().getFullYear();
 }
 
 function gotoMember(zone,name){
@@ -1183,8 +1360,8 @@ function switchZone(z){
 }
 
 function setView(v){
-  currentView=v; expandedCard=null; search='';
-  if(v!=='entry'){window._entryYear={}; window._entryMonth={};}  
+  currentView=v; expandedCard=null; search=''; filterStatus='all';
+  if(v!=='entry'){window._entryYear={}; window._entryMonth={};}
   document.querySelectorAll('.nb').forEach(b=>b.classList.toggle('on',b.dataset.v===v));
   render();
 }
@@ -1206,31 +1383,50 @@ function render(){
   else if(currentView==='operasional') c.innerHTML=renderOperasional();
   else if(currentView==='members') c.innerHTML=renderMembers();
   else c.innerHTML=renderDashboard(); // fallback
-  // Update global lock button icon
-  const glb=document.getElementById('global-lock-btn');
-  if(glb){
-    const icon=document.getElementById('global-lock-icon');
-    const lbl=document.getElementById('global-lock-lbl');
-    if(icon) icon.innerHTML=globalLocked?svgLock():svgUnlock();
-    if(lbl){lbl.textContent=globalLocked?'KUNCI':'BUKA';lbl.style.color=globalLocked?'#e05c5c':'#5bcea6';}
-    glb.style.color=globalLocked?'#e05c5c':'#5bcea6';
-  }
+  updateLockBanner();
   const thb=document.getElementById('theme-btn');
   if(thb) thb.textContent=darkMode?'🌙':'☀️';
   attachEvents();
   if(currentView==='grafik') setTimeout(initCharts,50);
 }
 
+
+// ── RESTORE SEARCH FOCUS SETELAH RENDER ──
+function restoreSearch(id, val, pos){
+  setTimeout(()=>{
+    const el=document.getElementById(id);
+    if(el){el.focus();try{el.setSelectionRange(pos,pos);}catch(e){}}
+  },0);
+}
 // ══════════════════════════════════════════
 // DASHBOARD VIEW
 // ══════════════════════════════════════════
 function renderDashboard(){
+  // Gunakan selYear/selMonth (bisa dipilih user), default bulan sekarang
   const now=new Date();
-  const dy=now.getFullYear();
-  const dm=now.getMonth();
+  if(window._dashInitDone===undefined){
+    // Pertama kali buka dashboard, set ke bulan sekarang
+    selYear=now.getFullYear(); selMonth=now.getMonth();
+    window._dashInitDone=true;
+  }
+  const dy=selYear;
+  const dm=selMonth;
   const krsTotal=getZoneTotal('KRS',dy,dm);
   const slkTotal=getZoneTotal('SLK',dy,dm);
   const totalIncome=krsTotal+slkTotal;
+
+  // Perbandingan bulan sebelumnya
+  const prevDm=dm===0?11:dm-1;
+  const prevDy=dm===0?dy-1:dy;
+  const krsPrev=getZoneTotal('KRS',prevDy,prevDm);
+  const slkPrev=getZoneTotal('SLK',prevDy,prevDm);
+  const krsPct2=krsPrev>0?Math.round(((krsTotal-krsPrev)/krsPrev)*100):null;
+  const slkPct2=slkPrev>0?Math.round(((slkTotal-slkPrev)/slkPrev)*100):null;
+  const pctBadge=(pct)=>{
+    if(pct===null) return '';
+    const up=pct>=0;
+    return `<span style="font-size:9px;font-weight:600;color:${up?'#5bcea6':'#e05c5c'};margin-left:4px">${up?'▲':'▼'}${Math.abs(pct)}% vs ${MONTHS[prevDm]}</span>`;
+  };
 
   // Ops bulan ini
   const opsKey=`${dy}_${dm}`;
@@ -1250,6 +1446,11 @@ function renderDashboard(){
 
   const krsPct=krsAll.length?Math.round(krsLunas/krsAll.length*100):0;
   const slkPct=slkAll.length?Math.round(slkLunas/slkAll.length*100):0;
+
+  // Free member bulan ini
+  const krsFree=krsAll.filter(m=>isFree('KRS',m,dy,dm)).length;
+  const slkFree=slkAll.filter(m=>isFree('SLK',m,dy,dm)).length;
+  const totalFree=krsFree+slkFree;
 
   // Top tunggakan
   const allZones=['KRS','SLK'];
@@ -1271,6 +1472,10 @@ function renderDashboard(){
   const lastBackup=localStorage.getItem('wp_last_backup');
   const backupLbl=lastBackup?new Date(+lastBackup).toLocaleDateString('id-ID'):'Belum pernah';
 
+  // Selector bulan+tahun
+  const moOpts=MONTHS.map((m,i)=>`<option value="${i}"${i===dm?' selected':''}>${m}</option>`).join('');
+  const yrOpts=YEARS.map(y=>`<option value="${y}"${y===dy?' selected':''}>${y}</option>`).join('');
+
   const tunggakCards=top5.length===0
     ?`<div style="text-align:center;padding:16px;color:#5bcea6;font-size:12px">✅ Semua lunas!</div>`
     :top5.map(t=>`<div style="display:flex;justify-content:space-between;align-items:center;padding:7px 0;border-bottom:1px solid var(--border2)">
@@ -1285,7 +1490,13 @@ function renderDashboard(){
       </div>`).join('');
 
   return `
-  <div style="font-family:'Syne',sans-serif;font-weight:800;font-size:16px;margin-bottom:12px;color:var(--txt)">📊 Dashboard</div>
+  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
+    <div style="font-family:'Syne',sans-serif;font-weight:800;font-size:16px;color:var(--txt)">📊 Dashboard</div>
+    <div style="display:flex;gap:5px">
+      <select class="cs" style="font-size:11px;padding:5px 8px" onchange="selMonth=+this.value;render()">${moOpts}</select>
+      <select class="cs" style="font-size:11px;padding:5px 8px" onchange="selYear=+this.value;render()">${yrOpts}</select>
+    </div>
+  </div>
 
   <!-- Bulan berjalan -->
   <div style="font-size:9px;color:var(--txt4);letter-spacing:.07em;margin-bottom:6px">${bulanLbl.toUpperCase()}</div>
@@ -1293,7 +1504,7 @@ function renderDashboard(){
   <!-- Total income row -->
   <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px">
     <div style="background:var(--card);border:1px solid var(--border);border-radius:12px;padding:12px">
-      <div style="font-size:9px;color:var(--txt4);margin-bottom:4px">KRS</div>
+      <div style="font-size:9px;color:var(--txt4);margin-bottom:2px">KRS ${pctBadge(krsPct2)}</div>
       <div style="font-family:'Syne',sans-serif;font-size:16px;font-weight:800;color:#3a7bd5">${rp(krsTotal)}</div>
       <div style="margin-top:6px">
         <div style="height:4px;background:var(--bg3);border-radius:2px;overflow:hidden">
@@ -1303,7 +1514,7 @@ function renderDashboard(){
       </div>
     </div>
     <div style="background:var(--card);border:1px solid var(--border);border-radius:12px;padding:12px">
-      <div style="font-size:9px;color:var(--txt4);margin-bottom:4px">SLK</div>
+      <div style="font-size:9px;color:var(--txt4);margin-bottom:2px">SLK ${pctBadge(slkPct2)}</div>
       <div style="font-family:'Syne',sans-serif;font-size:16px;font-weight:800;color:#e05c3a">${rp(slkTotal)}</div>
       <div style="margin-top:6px">
         <div style="height:4px;background:var(--bg3);border-radius:2px;overflow:hidden">
@@ -1329,13 +1540,13 @@ function renderDashboard(){
     ${totalOps>0?`<div style="font-size:10px;color:#e05c5c">💸 Operasional: ${rp(totalOps)}</div>`:'<div style="font-size:10px;color:var(--txt4)">💸 Belum ada data operasional</div>'}
   </div>
 
-  <!-- Belum bayar -->
+  <!-- Belum bayar + Free -->
   <div style="background:var(--card);border:1px solid var(--border);border-radius:12px;padding:12px;margin-bottom:8px">
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
       <div style="font-size:11px;font-weight:700;color:var(--txt)">⚠️ Belum Bayar ${bulanLbl}</div>
       <div style="font-size:11px;color:#e05c5c;font-weight:700">${krsBelum+slkBelum} pelanggan</div>
     </div>
-    <div style="display:flex;gap:8px">
+    <div style="display:flex;gap:8px;margin-bottom:8px">
       <div style="flex:1;background:var(--bg3);border-radius:8px;padding:8px;text-align:center">
         <div style="font-size:9px;color:var(--txt4)">KRS</div>
         <div style="font-size:18px;font-weight:700;color:#e05c5c">${krsBelum}</div>
@@ -1345,10 +1556,14 @@ function renderDashboard(){
         <div style="font-size:18px;font-weight:700;color:#e05c5c">${slkBelum}</div>
       </div>
       <div style="flex:1;background:var(--bg3);border-radius:8px;padding:8px;text-align:center">
-        <div style="font-size:9px;color:var(--txt4)">TOTAL</div>
+        <div style="font-size:9px;color:var(--txt4)">LUNAS</div>
         <div style="font-size:18px;font-weight:700;color:#5bcea6">${krsLunas+slkLunas}</div>
       </div>
     </div>
+    ${totalFree>0?`<div style="display:flex;align-items:center;justify-content:space-between;background:#0a2a1a;border:1px solid #5bcea622;border-radius:7px;padding:7px 10px">
+      <span style="font-size:10px;color:#5bcea6">🆓 Free member ${bulanLbl}</span>
+      <span style="font-size:12px;font-weight:700;color:#5bcea6">${totalFree} member <span style="font-size:9px;opacity:.7">(KRS:${krsFree} SLK:${slkFree})</span></span>
+    </div>`:''}
   </div>
 
   <!-- Top Tunggakan -->
@@ -1458,7 +1673,7 @@ function renderEntry(){
     <select class="cs" onchange="selMonth=+this.value;render()">${moOpts}</select>
     <select class="cs" onchange="selYear=+this.value;render()">${yrOpts}</select>
   </div>
-  <input class="search-box" placeholder="🔍 Cari nama..." value="${search}" oninput="search=this.value;render()"/>
+  <div class="search-wrap"><input class="search-box" id="entry-search" placeholder="🔍 Cari nama..." value="${search}" oninput="(()=>{const p=this.selectionStart;search=this.value;render();restoreSearch('entry-search',search,p);})()"/>${search?`<button class="search-clear" onclick="search='';render()">✕</button>`:''}</div>
   <div class="frow">
     ${[['all','Semua'],['paid','Lunas'],['unpaid','Belum']].map(([v,l])=>`<button class="fchip${filterStatus===v?' on':''}" onclick="filterStatus='${v}';render()">${l}</button>`).join('')}
   </div>
@@ -1491,7 +1706,7 @@ function renderRekap(){
         ?`<span style="font-size:8px;opacity:.7">🆓</span>`
         :v===0?`<span style="font-size:8px;opacity:.8">Akm</span>`
         :v!==null?(v*1000).toLocaleString('id-ID'):'—';
-      return `<td class="${cls}" onclick="goEntry('${name}',${mi})" title="${free?'Free Member':''}">${disp}</td>`;
+      return `<td class="${cls}" onclick="goEntry('${name}',${mi},${selYear})" title="${free?'Free Member':''}">${disp}</td>`;
     }).join('');
     return `<tr><td class="stk" style="left:0;font-size:10px;color:var(--txt5);padding-left:8px;min-width:22px">${i+1}</td>
     <td class="stk" style="left:22px;min-width:95px;font-size:12px;text-align:left;padding-left:6px">${name}</td>
@@ -1503,7 +1718,7 @@ function renderRekap(){
   }).join('');
   return `<div style="display:flex;gap:7px;margin-bottom:10px;align-items:center">
     <select class="cs" style="flex:none;width:auto" onchange="selYear=+this.value;render()">${yrOpts}</select>
-    <input class="search-box" style="margin:0;flex:1" placeholder="🔍 cari..." value="${search}" oninput="search=this.value;render()"/>
+    <div class="search-wrap" style="flex:1;margin:0"><input class="search-box" id="rekap-search" style="margin:0" placeholder="🔍 cari..." value="${search}" oninput="(()=>{const p=this.selectionStart;search=this.value;render();restoreSearch('rekap-search',search,p);})()"/>${search?`<button class="search-clear" onclick="search='';render()">✕</button>`:''}</div>
   </div>
   <div class="sum-bar" style="margin-bottom:10px">
     <div class="sum-lbl">${activeZone} ${selYear}</div>
@@ -1811,10 +2026,20 @@ function renderLog(){
   const logSearch=window._logSearch||'';
   const logYear=window._logYear??'';
   const logMonth=window._logMonth??'';
+  const logType=window._logType||'all';
 
   let filtered=logs;
 
-  // Filter search nama/aksi
+  // Filter tipe: hanya bayar
+  if(logType==='pay'){
+    filtered=filtered.filter(l=>l.action&&(
+      l.action.includes('💰')||
+      l.action.includes('🗑️ Hapus bayar')||
+      l.action.includes('Quick Pay')||
+      l.action.includes('🆓')
+    ));
+  }
+  // Filter search
   if(logSearch.trim()){
     const q=logSearch.trim().toLowerCase();
     filtered=filtered.filter(l=>(l.action||'').toLowerCase().includes(q)||(l.detail||'').toLowerCase().includes(q));
@@ -1837,8 +2062,8 @@ function renderLog(){
     :filtered.slice(0,150).map(l=>{
       const d=new Date(l.ts);
       const dt=`${d.toLocaleDateString('id-ID')} ${d.toLocaleTimeString('id-ID',{hour:'2-digit',minute:'2-digit'})}`;
-      const isPayLog=l.action&&(l.action.includes('💰')||l.action.includes('🗑️ Hapus bayar')||l.action.includes('🆓'));
-      return `<div class="log-item" style="${isPayLog?'border-left:2px solid #5bcea622':'border-left:2px solid var(--border)'}">
+      const isPayLog=l.action&&(l.action.includes('💰')||l.action.includes('🗑️ Hapus bayar')||l.action.includes('🆓')||l.action.includes('Quick Pay'));
+      return `<div class="log-item" style="${isPayLog?'border-left:2px solid #5bcea644':'border-left:2px solid var(--border)'}">
         <div class="log-time">${dt} · ${l.user||'—'}</div>
         <div class="log-action">${l.action}</div>
         ${l.detail?`<div class="log-detail">${l.detail}</div>`:''}
@@ -1846,20 +2071,22 @@ function renderLog(){
     }).join('');
 
   return `<div style="margin-bottom:10px">
-    <input class="search-box" style="margin-bottom:8px" placeholder="🔍 Cari nama / aksi..." value="${logSearch}" oninput="window._logSearch=this.value;render()"/>
+    <div style="display:flex;gap:4px;margin-bottom:8px;background:var(--bg3);padding:3px;border-radius:20px;border:1px solid var(--border)">
+      <button onclick="window._logType='all';render()" style="flex:1;padding:6px;border-radius:16px;border:none;cursor:pointer;font-size:11px;font-weight:600;background:${logType==='all'?'#3a7bd5':'transparent'};color:${logType==='all'?'#fff':"var(--txt3)"}">📋 Semua</button>
+      <button onclick="window._logType='pay';render()" style="flex:1;padding:6px;border-radius:16px;border:none;cursor:pointer;font-size:11px;font-weight:600;background:${logType==='pay'?'#5bcea6':'transparent'};color:${logType==='pay'?'#0a0c12':"var(--txt3)"}">💰 Hanya Bayar</button>
+    </div>
+    <div class="search-wrap" style="margin-bottom:8px"><input class="search-box" id="log-search" style="margin:0" placeholder="🔍 Cari nama / aksi..." value="${logSearch}" oninput="(()=>{const p=this.selectionStart;window._logSearch=this.value;render();restoreSearch('log-search',window._logSearch,p);})()"/>${logSearch?`<button class="search-clear" onclick="window._logSearch='';render()">✕</button>`:''}</div>
     <div style="display:flex;gap:6px">
       <select class="cs" style="flex:1" onchange="window._logYear=this.value;render()">${yrOpts}</select>
       <select class="cs" style="flex:1" onchange="window._logMonth=this.value===''?'':+this.value;render()">${moOpts}</select>
-      <button onclick="window._logSearch='';window._logYear='';window._logMonth='';render()" style="background:var(--bg3);border:1px solid var(--border);color:var(--txt3);padding:6px 10px;border-radius:7px;cursor:pointer;font-size:11px">Reset</button>
+      <button onclick="window._logSearch='';window._logYear='';window._logMonth='';window._logType='all';render()" style="background:var(--bg3);border:1px solid var(--border);color:var(--txt3);padding:6px 10px;border-radius:7px;cursor:pointer;font-size:11px">Reset</button>
     </div>
   </div>
-  <div style="font-size:10px;color:var(--txt3);margin-bottom:10px;letter-spacing:.06em">${filtered.length} dari ${logs.length} LOG · Edit non-bayar dihapus otomatis 7 hari</div>
+  <div style="font-size:10px;color:var(--txt3);margin-bottom:10px;letter-spacing:.06em">${filtered.length} dari ${logs.length} LOG · Semua log dihapus otomatis 30 hari</div>
   ${logItems}`;
 }
 
-// ══════════════════════════════════════════
-// MEMBERS VIEW
-// ══════════════════════════════════════════
+
 function renderMembers(){
   const zone=newMemberZone;
   const zc=zone==='KRS'?'#3a7bd5':'#e05c3a';
@@ -1976,7 +2203,7 @@ function renderMembers(){
   ${memberTab==='deleted'?deletedCards:`
   ${addForm}
   <div style="display:flex;gap:4px;flex-wrap:wrap;margin-bottom:8px">${sortBtns}</div>
-  <input class="search-box" placeholder="🔍 Cari nama di ${zone}..." value="${search}" oninput="search=this.value;render()"/>
+  <div class="search-wrap"><input class="search-box" id="member-search" placeholder="🔍 Cari nama di ${zone}..." value="${search}" oninput="(()=>{const p=this.selectionStart;search=this.value;render();restoreSearch('member-search',search,p);})()"/>${search?`<button class="search-clear" onclick="search='';render()">✕</button>`:''}</div>
   <div style="font-size:10px;color:var(--txt4);margin-bottom:8px">${filtered.length} member${search?' ditemukan':''} · ${zone}</div>
   ${rows||'<div style="text-align:center;padding:20px;color:var(--txt3);font-size:12px">Tidak ada member</div>'}
   `}
@@ -2268,19 +2495,20 @@ function saveFreeModal(){
 function removeFreeModal(zone,name){
   const key=zone+'__'+name;
   if(!appData.freeMembers?.[key]) return;
-  // Hapus key dari freeMembers — data pembayaran (payments) tidak terpengaruh
-  delete appData.freeMembers[key];
-  saveDB({action:`💳 Kembalikan ke Berbayar ${zone} - ${name}`,detail:`Free member dihapus`});
-  showToast(`${name} dikembalikan ke berbayar`);
-  closeFreeModal();
-  render();
+  showConfirm('💳',`Kembalikan <b>${name}</b> ke berbayar?<br><span style="font-size:11px;color:var(--txt3)">Status free member akan dihapus. Riwayat bayar tetap aman.</span>`,'Ya, Kembalikan Berbayar',()=>{
+    delete appData.freeMembers[key];
+    saveDB({action:`💳 Kembalikan ke Berbayar ${zone} - ${name}`,detail:`Free member dihapus`});
+    showToast(`${name} dikembalikan ke berbayar`);
+    closeFreeModal();
+    render();
+  });
 }
 
 function closeFreeModal(){
   document.getElementById('free-modal').style.display='none';
 }
 
-function goEntry(name,month){selMonth=month;expandedCard=name;setView('entry');search=name;render();}
+function goEntry(name,month,year){selYear=year??selYear;selMonth=month;filterStatus='all';expandedCard=name;setView('entry');search=name;render();}
 
 function addMember(){
   const name=(document.getElementById('af-name')?.value||'').trim().toUpperCase();
@@ -2368,6 +2596,7 @@ function toggleGlobalLock(){
   globalLocked=!globalLocked;
   localStorage.setItem('wp_global_locked', globalLocked?'1':'0');
   showToast(globalLocked?'🔒 Semua data entry terkunci':'🔓 Data entry tidak terkunci', globalLocked?'ok':'err');
+  updateLockBanner();
   render();
 }
 
