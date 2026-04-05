@@ -1,0 +1,14 @@
+# Firebase
+.firebase/
+firebase-debug.log
+.firebaserc.bak
+
+# Data backup lokal - JANGAN dipush ke GitHub
+wifipay-data.json
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Node
+node_modules/
