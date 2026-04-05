@@ -1192,18 +1192,13 @@ function setSyncOffline(){
 // Auth state
 auth.onAuthStateChanged(user=>{
   if(user){
-    // Hanya masuk otomatis jika layar login sedang tampil
-    // dan user BELUM di layar app (bukan setelah logout)
     const appEl=document.getElementById('screen-app');
     const appVisible=appEl&&appEl.classList.contains('visible');
     if(!appVisible){
       showAppScreen(user);
     }
   } else {
-    const appEl=document.getElementById('screen-app');
-    if(appEl&&appEl.classList.contains('visible')){
-      showLoginScreen();
-    }
+    showLoginScreen();
   }
 });
 
