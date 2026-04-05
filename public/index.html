@@ -11,8 +11,8 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"/>
 <meta name="apple-mobile-web-app-title" content="WiFi Pay"/>
 <link rel="manifest" href="manifest.json"/>
-<link rel="icon" href="icons/icon-192.png"/>
-<link rel="apple-touch-icon" href="icons/icon-192.png"/>
+<link rel="icon" href="icon-192.png"/>
+<link rel="apple-touch-icon" href="icon-192.png"/>
 <link rel="preconnect" href="https://fonts.googleapis.com"/>
 <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@300;400;500&family=Syne:wght@700;800&display=swap" rel="stylesheet"/>
 <!-- Firebase -->
@@ -831,13 +831,13 @@ body,#sidebar,#header,#action-bar,#content,
 // FIREBASE CONFIG
 // ══════════════════════════════════════════
 firebase.initializeApp({
-  apiKey:"AIzaSyAgHjQTmxzlHi0G92-480hMhmcNszNKJWI",
-  authDomain:"my-project-b755b.firebaseapp.com",
-  databaseURL:"https://my-project-b755b-default-rtdb.asia-southeast1.firebasedatabase.app",
-  projectId:"my-project-b755b",
-  storageBucket:"my-project-b755b.firebasestorage.app",
-  messagingSenderId:"687940269514",
-  appId:"1:687940269514:web:88dd265cf9ccfd10d38b33"
+  apiKey:"AIzaSyAQ5Yn0KuTMCWvLBoFzyU7FQjf9tR4hhkY",
+  authDomain:"wifi-pay-online.firebaseapp.com",
+  databaseURL:"https://wifi-pay-online-default-rtdb.asia-southeast1.firebasedatabase.app",
+  projectId:"wifi-pay-online",
+  storageBucket:"wifi-pay-online.firebasestorage.app",
+  messagingSenderId:"836904224947",
+  appId:"1:836904224947:web:2c86e81353542791e008c6"
 });
 const auth = firebase.auth();
 const db = firebase.database();
@@ -922,22 +922,20 @@ function showRegister(){
   document.getElementById('login-remembered').style.display='none';
 }
 function showSwitchAccount(){
-  auth.signOut().then(()=>{
-    localStorage.removeItem('wp_remember_email');
-    localStorage.removeItem('wp_remember_name');
-    localStorage.removeItem('wp_cred');
-    document.getElementById('login-remembered').style.display='none';
-    document.getElementById('register-form').style.display='none';
-    document.getElementById('login-form').style.display='';
-    document.getElementById('lf-email').value='';
-    document.getElementById('lf-pass').value='';
-    document.getElementById('lf-err').textContent='';
-  }).catch(()=>{
-    localStorage.removeItem('wp_remember_email');
-    localStorage.removeItem('wp_remember_name');
-    localStorage.removeItem('wp_cred');
-    showLogin();
-  });
+  const savedEmail=localStorage.getItem('wp_remember_email')||'';
+  const savedCred=localStorage.getItem('wp_cred')||'';
+  let savedPass='';
+  if(savedCred){
+    const decoded=dec(savedCred);
+    const parts=decoded.split('::');
+    if(parts.length>=2) savedPass=parts.slice(1).join('::');
+  }
+  document.getElementById('login-remembered').style.display='none';
+  document.getElementById('register-form').style.display='none';
+  document.getElementById('login-form').style.display='';
+  document.getElementById('lf-email').value=savedEmail;
+  document.getElementById('lf-pass').value=savedPass;
+  document.getElementById('lf-err').textContent='';
 }
 
 async function doLogin(){
@@ -984,34 +982,34 @@ async function loginRemembered(){
   const errEl=document.getElementById('lr-err');
   if(btn){btn.textContent='⏳ Memuat...';btn.disabled=true;}
   if(errEl) errEl.textContent='';
-  // Cek apakah user masih aktif di Firebase
-  const user=auth.currentUser;
-  if(user){
-    showAppScreen(user);
-    return;
+  const resetBtn=()=>{if(btn){btn.textContent='🚀 Lanjutkan';btn.disabled=false;}};
+  // Simpan timer di global agar bisa di-cancel saat logout/showLoginScreen
+  if(window._safetyTimer) clearTimeout(window._safetyTimer);
+  window._safetyTimer=setTimeout(()=>{
+    window._safetyTimer=null;
+    resetBtn();
+    if(errEl) errEl.textContent='Koneksi lambat, coba lagi';
+  },8000);
+  try{
+    const saved=localStorage.getItem('wp_cred');
+    if(!saved){clearTimeout(window._safetyTimer);window._safetyTimer=null;resetBtn();showSwitchAccount();return;}
+    const decoded=dec(saved);
+    const [email,...rest]=decoded.split('::');
+    const pass=rest.join('::');
+    await auth.setPersistence(firebase.auth.Auth.Persistence.LOCAL);
+    const cred=await auth.signInWithEmailAndPassword(email,pass);
+    clearTimeout(window._safetyTimer);
+    window._safetyTimer=null;
+    _appJustOpened=false;
+    showAppScreen(cred.user);
+  }catch(e){
+    clearTimeout(window._safetyTimer);
+    window._safetyTimer=null;
+    localStorage.removeItem('wp_cred');
+    if(errEl) errEl.textContent='Password berubah, silakan login ulang';
+    resetBtn();
+    setTimeout(()=>showSwitchAccount(),2000);
   }
-  // Session expired - coba auto re-login dengan saved credentials
-  const saved=localStorage.getItem('wp_cred');
-  if(saved){
-    try{
-      const decoded=dec(saved);
-      const [email,pass]=decoded.split('::');
-      await auth.setPersistence(firebase.auth.Auth.Persistence.LOCAL);
-      await auth.signInWithEmailAndPassword(email,pass);
-      // onAuthStateChanged akan handle showAppScreen
-      return;
-    }catch(e){
-      // Credentials tidak valid (password diganti dll) -> show login form
-      localStorage.removeItem('wp_cred');
-      if(errEl) errEl.textContent='Sesi habis, silakan login ulang';
-      if(btn){btn.textContent='🚀 Lanjutkan';btn.disabled=false;}
-      setTimeout(()=>showSwitchAccount(),1500);
-      return;
-    }
-  }
-  // Tidak ada saved credentials -> show login form
-  if(btn){btn.textContent='🚀 Lanjutkan';btn.disabled=false;}
-  showSwitchAccount();
 }
 
 function showAccountModal(){
@@ -1020,21 +1018,13 @@ function showAccountModal(){
 }
 function switchAccount(){
   closeModal('account-modal');
-  auth.signOut().then(()=>{
-    localStorage.removeItem('wp_remember_email');
-    localStorage.removeItem('wp_remember_name');
-    localStorage.removeItem('wp_cred');
-    showLoginScreen();
-  });
+  auth.signOut().then(()=>{ showLoginScreen(); });
 }
 async function doLogout(){
   closeModal('account-modal');
   window._dashInitDone=undefined;
   window._riwayatYear=undefined;
   await auth.signOut();
-  localStorage.removeItem('wp_remember_email');
-  localStorage.removeItem('wp_remember_name');
-  localStorage.removeItem('wp_cred');
   showLoginScreen();
 }
 
@@ -1044,6 +1034,11 @@ function friendlyAuthError(code){
 }
 
 function showLoginScreen(){
+  // Cancel safetyTimer dari loginRemembered jika masih jalan
+  if(window._safetyTimer){clearTimeout(window._safetyTimer);window._safetyTimer=null;}
+  // Reset tombol Lanjutkan jika masih disabled
+  const btn=document.getElementById('btn-lanjut');
+  if(btn){btn.textContent='🚀 Lanjutkan';btn.disabled=false;}
   hideLoadingScreen();
   const loginEl=document.getElementById('screen-login');
   const appEl=document.getElementById('screen-app');
@@ -1052,27 +1047,6 @@ function showLoginScreen(){
   if(dbRef){try{dbRef.off();}catch(e){} dbRef=null;}
   const savedEmail=localStorage.getItem('wp_remember_email');
   const savedName=localStorage.getItem('wp_remember_name');
-  const savedCred=localStorage.getItem('wp_cred');
-  // Jika ada saved credentials -> auto re-login diam-diam
-  if(savedCred){
-    const decoded=dec(savedCred);
-    const parts=decoded.split('::');
-    if(parts.length>=2){
-      const email=parts[0];
-      const pass=parts.slice(1).join('::');
-      // Coba auto login tanpa tampilkan layar apapun
-      auth.setPersistence(firebase.auth.Auth.Persistence.LOCAL)
-        .then(()=>auth.signInWithEmailAndPassword(email,pass))
-        .then(cred=>{
-          // Berhasil - onAuthStateChanged akan handle showAppScreen
-        })
-        .catch(()=>{
-          // Gagal - tampilkan layar remembered
-          _showLoginUI(savedEmail,savedName);
-        });
-      return; // Jangan tampilkan apapun dulu
-    }
-  }
   _showLoginUI(savedEmail,savedName);
 }
 
@@ -1195,12 +1169,31 @@ function setSyncOffline(){
 }
 
 // Auth state
+// Flag: apakah ini pertama kali app dibuka (bukan refresh di tengah sesi)
+let _appJustOpened=true;
 auth.onAuthStateChanged(user=>{
-  if(user){
-    showAppScreen(user);
-  } else {
-    showLoginScreen();
-  }
+  setTimeout(()=>{
+    if(user){
+      const appEl=document.getElementById('screen-app');
+      const appVisible=appEl&&appEl.classList.contains('visible');
+      if(appVisible){
+        // Refresh di tengah sesi - tetap di app, tidak perlu apa-apa
+        _appJustOpened=false;
+        return;
+      }
+      if(_appJustOpened){
+        // Pertama buka app - meskipun Firebase masih ingat user, tampilkan login dulu
+        _appJustOpened=false;
+        showLoginScreen();
+      } else {
+        // Login berhasil via klik Lanjutkan - masuk ke app
+        showAppScreen(user);
+      }
+    } else {
+      _appJustOpened=false;
+      showLoginScreen();
+    }
+  },50);
 });
 
 // Re-check auth saat app kembali dari background

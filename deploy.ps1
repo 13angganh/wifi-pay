@@ -1,4 +1,12 @@
-﻿const CACHE = "wifipay-20260405170800";
+Write-Host "=== WiFi Pay Auto Deploy ===" -ForegroundColor Cyan
+
+# Generate timestamp
+$ts = Get-Date -Format "yyyyMMddHHmmss"
+Write-Host "Cache version: wifipay-$ts" -ForegroundColor Yellow
+
+# Tulis sw.js baru dengan versi cache fresh
+$swContent = @"
+const CACHE = "wifipay-$ts";
 const ASSETS = [
   "./",
   "./index.html",
@@ -55,3 +63,13 @@ self.addEventListener("fetch", e => {
 self.addEventListener("message", e => {
   if (e.data && e.data.type === "SKIP_WAITING") self.skipWaiting();
 });
+"@
+
+Set-Content -Path "public\sw.js" -Value $swContent -Encoding UTF8
+Write-Host "sw.js diperbarui!" -ForegroundColor Green
+
+# Deploy ke Firebase
+Write-Host "Deploying..." -ForegroundColor Cyan
+firebase deploy --only hosting
+
+Write-Host "=== Deploy selesai! ===" -ForegroundColor Green
