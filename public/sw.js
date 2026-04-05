@@ -1,5 +1,17 @@
-const CACHE = "wifipay-v13";
-const ASSETS = ["./", "./index.html", "./manifest.json", "./icon-192.png", "./icon-512.png"];
+const CACHE = "wifipay-v14";
+const ASSETS = [
+  "./",
+  "./index.html",
+  "./manifest.json",
+  "./icons/icon-72.png",
+  "./icons/icon-96.png",
+  "./icons/icon-128.png",
+  "./icons/icon-144.png",
+  "./icons/icon-152.png",
+  "./icons/icon-192.png",
+  "./icons/icon-384.png",
+  "./icons/icon-512.png"
+];
 
 self.addEventListener("install", e => {
   e.waitUntil(
