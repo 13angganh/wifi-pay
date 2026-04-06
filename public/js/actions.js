@@ -36,30 +36,49 @@ function filteredMembers(){
 function toggleCard(name){
   const wasExpanded=expandedCard===name;
   expandedCard=wasExpanded?null:name;
+  // Simpan scroll sebelum render supaya render() tidak loncat
+  const c=document.getElementById('content');
+  if(c && c.scrollTop>0) window._entryScrollTop=c.scrollTop;
   render();
   if(!wasExpanded && expandedCard){
-    // Buka card: scroll supaya card terlihat di atas keyboard
-    setTimeout(()=>{
+    // Buka card: scroll supaya card terlihat dan tidak tertutup keyboard virtual
+    requestAnimationFrame(()=>{
       const el=document.getElementById('card-'+name.replace(/\s/g,'_'));
-      if(el){
-        // Scroll card ke posisi ~1/3 dari atas layar agar tidak ketutup keyboard
-        const c=document.getElementById('content');
-        const cardTop=el.offsetTop;
-        const targetScroll=cardTop-80;
-        if(c) c.scrollTop=Math.max(0,targetScroll);
+      const cont=document.getElementById('content');
+      if(!el||!cont) return;
+      // Perkiraan tinggi keyboard virtual: 280px di HP, 0 di desktop
+      const kbHeight=window.innerWidth<768?280:0;
+      const availHeight=window.innerHeight-kbHeight;
+      const cardRect=el.getBoundingClientRect();
+      const contRect=cont.getBoundingClientRect();
+      // Jika card sudah terlihat penuh dalam area yang tersedia, tidak perlu scroll
+      if(cardRect.top>=contRect.top && cardRect.bottom<=(contRect.top+availHeight-60)){
+        // Card sudah terlihat, hanya focus input
+        const inp=document.getElementById('inp-'+name.replace(/\s/g,'_'));
+        if(inp) inp.focus({preventScroll:true});
+        return;
       }
-      const inp=document.getElementById('inp-'+name.replace(/\s/g,'_'));
-      if(inp) inp.focus();
-    },30);
+      // Scroll card ke posisi 80px dari atas konten
+      const targetScroll=cont.scrollTop+(cardRect.top-contRect.top)-80;
+      cont.scrollTop=Math.max(0,targetScroll);
+      window._entryScrollTop=cont.scrollTop;
+      // Focus input setelah scroll settle
+      setTimeout(()=>{
+        const inp=document.getElementById('inp-'+name.replace(/\s/g,'_'));
+        if(inp) inp.focus({preventScroll:true});
+      },60);
+    });
   }
-  // Saat tutup (wasExpanded=true): tidak ada scroll, tetap di posisi sekarang
+  // Saat tutup (wasExpanded=true): tidak ada scroll sama sekali — tetap di posisi sekarang
 }
 
 function setEntryMonth(name,val,type){
   if(type==='year') window._entryYear[name]=+val;
   else window._entryMonth[name]=+val;
   expandedCard=name;
-  // render() sudah jaga scroll di entry view
+  // Simpan scroll sebelum render
+  const c=document.getElementById('content');
+  if(c && c.scrollTop>0) window._entryScrollTop=c.scrollTop;
   render();
 }
 
@@ -84,7 +103,7 @@ function saveEntryPay(name,val){
     showToast(`${name} ${MONTHS[em]} ${ey} → ${label}`);
   }
   expandedCard=name;
-  // Render tanpa scroll loncat — posisi scroll dipertahankan di render()
+  // render() dipanggil lokal sekali (optimistic UI), Firebase listener akan skip karena _isSaving
   render();
 }
 
@@ -113,7 +132,7 @@ function quickEntryPay(name,amt){
   saveDB({action:`💰 Quick Pay ${activeZone} - ${name}`,detail:`${MONTHS[em]} ${ey}: ${old??'—'} → Rp ${(amt*1000).toLocaleString('id-ID')}`});
   showToast(`${name} ${MONTHS[em]} ${ey} → ${rp(amt)}`);
   expandedCard=name;
-  // Render — posisi scroll dipertahankan di render()
+  // Optimistic UI — Firebase listener skip karena _isSaving
   render();
 }
 
@@ -150,7 +169,9 @@ function saveInfoField(el){
   appData.memberInfo[k][field]=val;
   saveDB({action:`📅 Update ${activeZone} - ${name}`,detail:`${field}: ${val}`});
   expandedCard=name;
-  // render() jaga scroll di entry view
+  // Simpan scroll sebelum render
+  const c=document.getElementById('content');
+  if(c && c.scrollTop>0) window._entryScrollTop=c.scrollTop;
   render();
   showToast(`Tanggal bayar disimpan`);
 }
@@ -198,11 +219,13 @@ function gotoMember(zone,name){
 function toggleGlobalLock(){
   globalLocked=!globalLocked;
   localStorage.setItem('wp_global_locked',globalLocked?'1':'0');
-  // Simpan ke Firebase supaya realtime di semua device
-  if(dbRef) dbRef.child('_globalLocked').set(globalLocked);
   showToast(globalLocked?'🔒 Semua data entry terkunci':'🔓 Data entry tidak terkunci',globalLocked?'ok':'err');
   updateLockBanner();
   render();
+  // Simpan ke Firebase — update subcollection DAN appData utama
+  if(dbRef){
+    dbRef.child('_globalLocked').set(globalLocked);
+  }
 }
 
 function toggleMembersLock(){
@@ -215,10 +238,12 @@ function toggleEntryLock(zone,name){
   const k=zone+'__'+name;
   lockedEntries[k]=!lockedEntries[k];
   localStorage.setItem('wp_locked_entries',JSON.stringify(lockedEntries));
-  // Simpan ke Firebase supaya realtime di semua device
-  if(dbRef) dbRef.child('_lockedEntries').set(lockedEntries);
   showToast(lockedEntries[k]?`🔒 ${name} terkunci`:`🔓 ${name} tidak terkunci`);
   render();
+  // Simpan ke Firebase — update subcollection DAN appData utama
+  if(dbRef){
+    dbRef.child('_lockedEntries').set(lockedEntries);
+  }
 }
 
 // ── MEMBER CRUD ──

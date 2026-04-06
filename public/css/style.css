@@ -369,3 +369,31 @@ body,#sidebar,#header,#action-bar,#content{transition:background-color .2s ease}
 #header{box-shadow:0 1px 3px rgba(0,0,0,.06)}
 #content{scroll-behavior:smooth}
 @supports(padding-bottom:env(safe-area-inset-bottom)){#content{padding-bottom:calc(20px + env(safe-area-inset-bottom))}}
+
+/* ── Suppress browser autofill/credential icons di input entry & app ──
+   Icon kunci, kartu, lokasi dari password manager hanya boleh muncul di login screen */
+#screen-app input::-webkit-credentials-auto-fill-button,
+#screen-app input::-webkit-contacts-auto-fill-button,
+#screen-app input::-ms-reveal,
+#screen-app input::-ms-clear,
+.mc-input::-webkit-credentials-auto-fill-button,
+.mc-input::-webkit-contacts-auto-fill-button,
+.mc-input::-webkit-textfield-decoration-container,
+.mc-date::-webkit-credentials-auto-fill-button,
+.mc-date::-webkit-contacts-auto-fill-button,
+.af-input::-webkit-credentials-auto-fill-button,
+.af-input::-webkit-contacts-auto-fill-button,
+.ops-input::-webkit-credentials-auto-fill-button,
+.ops-input::-webkit-contacts-auto-fill-button {
+  display: none !important;
+  visibility: hidden !important;
+  pointer-events: none !important;
+  width: 0 !important;
+}
+/* Chrome: nonaktifkan autofill highlight kuning di input app */
+#screen-app input:-webkit-autofill,
+#screen-app input:-webkit-autofill:hover,
+#screen-app input:-webkit-autofill:focus {
+  -webkit-box-shadow: 0 0 0 1000px var(--bg3) inset !important;
+  -webkit-text-fill-color: var(--txt) !important;
+}

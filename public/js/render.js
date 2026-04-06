@@ -5,6 +5,8 @@
 // ── RENDER ROUTER ──
 // Simpan scroll position entry secara global supaya tidak hilang saat render dari listener realtime
 window._entryScrollTop=0;
+// Flag: sedang ada user interaction (buka/tutup card) — tunda Firebase listener render
+window._userInteracting=false;
 
 function render(){
   const c=document.getElementById('content');
@@ -12,9 +14,14 @@ function render(){
   Object.values(chartInstances).forEach(ch=>{try{ch.destroy();}catch(e){}});
   chartInstances={};
   const isEntry=currentView==='entry';
-  // Ambil scroll terbaru dari DOM dulu (lebih akurat dari nilai global)
-  if(isEntry && c.scrollTop>0) window._entryScrollTop=c.scrollTop;
+  // Simpan scroll aktual dari DOM (lebih akurat)
+  if(isEntry){
+    const domScroll=c.scrollTop;
+    // Ambil nilai terbesar (hindari reset ke 0 dari re-render saat scroll sedang di bawah)
+    if(domScroll>0) window._entryScrollTop=domScroll;
+  }
   const savedScroll=isEntry?window._entryScrollTop:0;
+
   if(currentView==='dashboard') c.innerHTML=renderDashboard();
   else if(currentView==='entry') c.innerHTML=renderEntry();
   else if(currentView==='rekap') c.innerHTML=renderRekap();
@@ -24,9 +31,20 @@ function render(){
   else if(currentView==='operasional') c.innerHTML=renderOperasional();
   else if(currentView==='members') c.innerHTML=renderMembers();
   else c.innerHTML=renderDashboard();
-  // Entry: kembalikan scroll ke posisi semula (jangan loncat ke atas)
-  if(isEntry) c.scrollTop=savedScroll;
-  else { c.scrollTop=0; window._entryScrollTop=0; }
+
+  // Entry: kembalikan scroll ke posisi semula — gunakan requestAnimationFrame
+  // supaya scroll di-set SETELAH DOM benar-benar selesai dipaint
+  if(isEntry){
+    if(savedScroll>0){
+      requestAnimationFrame(()=>{
+        c.scrollTop=savedScroll;
+      });
+    }
+  } else {
+    c.scrollTop=0;
+    window._entryScrollTop=0;
+  }
+
   updateLockBanner();
   document.querySelectorAll('.sb-item').forEach(b=>b.classList.toggle('on',b.dataset.v===currentView));
   document.querySelectorAll('.nb').forEach(b=>b.classList.toggle('on',b.dataset.v===currentView));
@@ -189,12 +207,12 @@ function renderEntry(){
       ${entryFree?`<div style="background:#0a2a18;border:1px solid #4CAF5033;border-radius:7px;padding:8px;font-size:11px;color:#4CAF50;text-align:center">🆓 Member Gratis periode ini</div>`:`
       <div class="mc-row">
         <span class="mc-label">JUMLAH</span>
-        <input class="mc-input" type="number" inputmode="numeric" placeholder="0" value="${entryVal!==null?entryVal:''}" data-name="${name}" id="inp-${name.replace(/\s/g,'_')}" onchange="saveEntryPay('${name}',this.value)" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"/>
+        <input class="mc-input" type="number" inputmode="numeric" pattern="[0-9]*" placeholder="0" value="${entryVal!==null?entryVal:''}" data-name="${name}" id="inp-${name.replace(/\s/g,'_')}" onchange="saveEntryPay('${name}',this.value)" autocomplete="new-password" autocorrect="off" autocapitalize="off" spellcheck="false" data-lpignore="true" data-form-type="other"/>
         ${entryVal!==null?`<button class="delbtn" onclick="clearEntryPay('${name}')">✕</button>`:''}
       </div>
       <div class="mc-row">
         <span class="mc-label">TGL BAYAR</span>
-        <input class="mc-date" type="date" value="${info['date_'+entryYear+'_'+entryMonth]||''}" data-field="date_${entryYear}_${entryMonth}" data-name="${name}" onchange="saveInfoField(this)" autocomplete="off"/>
+        <input class="mc-date" type="date" value="${info['date_'+entryYear+'_'+entryMonth]||''}" data-field="date_${entryYear}_${entryMonth}" data-name="${name}" onchange="saveInfoField(this)" autocomplete="off" data-lpignore="true"/>
       </div>
       <div class="mc-row"><span class="mc-label">QUICK</span>
         <div class="qrow">${(()=>{const info2=getInfo(name);const tarif=info2.tarif;const tarifBtn=tarif?`<button class="qb" style="border-color:var(--zc);color:var(--zc);font-weight:700" onclick="quickEntryPay('${name}',${tarif})">${tarif} ★</button>`:'<span style="font-size:9px;color:var(--txt4);align-self:center">★ Belum ada tarif</span>';const others=QUICK.filter(a=>a!==tarif).map(a=>`<button class="qb" onclick="quickEntryPay('${name}',${a})">${a}</button>`).join('');return tarifBtn+others;})()}</div>

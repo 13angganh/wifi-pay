@@ -7,42 +7,60 @@ function initDB(){
   setSyncStatus('loading');
   dbRef=db.ref('users/'+uid+'/data');
 
-  // ── Listener realtime untuk lock status (terpisah dari data utama) ──
+  // ── Listener realtime untuk lock global — terpisah, selalu aktif ──
   dbRef.child('_globalLocked').on('value',snap=>{
     const val=snap.val();
     if(val!==null && typeof val==='boolean'){
       globalLocked=val;
       localStorage.setItem('wp_global_locked',val?'1':'0');
       updateLockBanner();
-      render();
+      // Render ringan: hanya update banner + icon lock di cards entry
+      // tanpa full re-render supaya tidak ganggu scroll posisi
+      if(currentView==='entry') render();
     }
   });
+
+  // ── Listener realtime untuk lockedEntries — terpisah, selalu aktif ──
   dbRef.child('_lockedEntries').on('value',snap=>{
     const val=snap.val();
     if(val!==null && typeof val==='object'){
       lockedEntries=val||{};
       localStorage.setItem('wp_locked_entries',JSON.stringify(lockedEntries));
-      render();
+      if(currentView==='entry') render();
     }
   });
 
+  // ── Listener utama data ──
   dbRef.on('value',snap=>{
     const val=snap.val();
-    // Hanya abaikan update jika SEDANG dalam proses simpan (race condition lokal)
-    // Jangan abaikan berdasarkan waktu karena akan memblokir update dari device lain
-    if(_isSaving) return;
+    // Jika sedang menyimpan dari device INI (dalam window 1.5 detik), skip
+    // supaya tidak overwrite optimistic UI lokal. Update dari device LAIN
+    // akan ditangkap setelah flag ini habis.
+    const now=Date.now();
+    if(_isSaving && (now-_lastSaveTs)<1500) return;
+    // Reset flag jika sudah lewat 1.5 detik (fallback safety)
+    if(_isSaving) _isSaving=false;
+
     if(val&&(val.krsMembers||val.payments)){
-      const mergedFree=val.freeMembers||{};
       appData={
         krsMembers: val.krsMembers||[],
         slkMembers: val.slkMembers||[],
         payments: val.payments||{},
         memberInfo: val.memberInfo||{},
         activityLog: val.activityLog||[],
-        freeMembers: mergedFree,
+        freeMembers: val.freeMembers||{},
         deletedMembers: val.deletedMembers||{},
         operasional: val.operasional||{}
       };
+      // Sync lock status dari Firebase jika ada (support multi-device)
+      if(typeof val._globalLocked==='boolean'){
+        globalLocked=val._globalLocked;
+        localStorage.setItem('wp_global_locked',val._globalLocked?'1':'0');
+      }
+      if(val._lockedEntries&&typeof val._lockedEntries==='object'){
+        lockedEntries=val._lockedEntries;
+        localStorage.setItem('wp_locked_entries',JSON.stringify(lockedEntries));
+      }
       cleanOldEditLogs();
     } else if(!val){
       appData={
@@ -68,14 +86,20 @@ function saveDB(logEntry){
   }
   _isSaving=true;
   _lastSaveTs=Date.now();
+  // Safety: paksa reset flag setelah 2 detik agar device lain tidak terblokir lama
+  clearTimeout(window._savingTimeout);
+  window._savingTimeout=setTimeout(()=>{ _isSaving=false; },2000);
   dbRef.set(appData)
     .then(()=>{
       setSyncStatus('ok');
-      // Lepas flag isSaving segera setelah save selesai
-      // supaya update realtime dari device lain tidak terblokir
       _isSaving=false;
+      clearTimeout(window._savingTimeout);
     })
-    .catch(()=>{setSyncStatus('err'); _isSaving=false;});
+    .catch(()=>{
+      setSyncStatus('err');
+      _isSaving=false;
+      clearTimeout(window._savingTimeout);
+    });
 }
 
 function setSyncStatus(s){
