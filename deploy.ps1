@@ -70,6 +70,6 @@ Write-Host "sw.js diperbarui!" -ForegroundColor Green
 
 # Deploy ke Firebase
 Write-Host "Deploying..." -ForegroundColor Cyan
-firebase deploy --only hosting
+firebase deploy --only hosting --project wifi-pay-online
 
 Write-Host "=== Deploy selesai! ===" -ForegroundColor Green
