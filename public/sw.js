@@ -1,4 +1,4 @@
-﻿const CACHE = "wifipay-20260406214838";
+﻿const CACHE = "wifipay-20260406220101";
 const ASSETS = [
   "./",
   "./index.html",
