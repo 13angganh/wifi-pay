@@ -6,9 +6,31 @@
 function initDB(){
   setSyncStatus('loading');
   dbRef=db.ref('users/'+uid+'/data');
+
+  // ── Listener realtime untuk lock status (terpisah dari data utama) ──
+  dbRef.child('_globalLocked').on('value',snap=>{
+    const val=snap.val();
+    if(val!==null && typeof val==='boolean'){
+      globalLocked=val;
+      localStorage.setItem('wp_global_locked',val?'1':'0');
+      updateLockBanner();
+      render();
+    }
+  });
+  dbRef.child('_lockedEntries').on('value',snap=>{
+    const val=snap.val();
+    if(val!==null && typeof val==='object'){
+      lockedEntries=val||{};
+      localStorage.setItem('wp_locked_entries',JSON.stringify(lockedEntries));
+      render();
+    }
+  });
+
   dbRef.on('value',snap=>{
     const val=snap.val();
-    if(_isSaving || (Date.now()-_lastSaveTs)<1500) return;
+    // Hanya abaikan update jika SEDANG dalam proses simpan (race condition lokal)
+    // Jangan abaikan berdasarkan waktu karena akan memblokir update dari device lain
+    if(_isSaving) return;
     if(val&&(val.krsMembers||val.payments)){
       const mergedFree=val.freeMembers||{};
       appData={
@@ -49,7 +71,9 @@ function saveDB(logEntry){
   dbRef.set(appData)
     .then(()=>{
       setSyncStatus('ok');
-      setTimeout(()=>{_isSaving=false;},1000);
+      // Lepas flag isSaving segera setelah save selesai
+      // supaya update realtime dari device lain tidak terblokir
+      _isSaving=false;
     })
     .catch(()=>{setSyncStatus('err'); _isSaving=false;});
 }

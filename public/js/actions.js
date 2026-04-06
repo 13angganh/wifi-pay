@@ -12,6 +12,7 @@ function switchZone(z){
 
 function setView(v){
   currentView=v; expandedCard=null; search=''; filterStatus='all';
+  window._entryScrollTop=0;
   if(v!=='entry'){window._entryYear={}; window._entryMonth={};}
   document.querySelectorAll('.nb').forEach(b=>b.classList.toggle('on',b.dataset.v===v));
   document.querySelectorAll('.sb-item').forEach(b=>b.classList.toggle('on',b.dataset.v===v));
@@ -197,6 +198,8 @@ function gotoMember(zone,name){
 function toggleGlobalLock(){
   globalLocked=!globalLocked;
   localStorage.setItem('wp_global_locked',globalLocked?'1':'0');
+  // Simpan ke Firebase supaya realtime di semua device
+  if(dbRef) dbRef.child('_globalLocked').set(globalLocked);
   showToast(globalLocked?'🔒 Semua data entry terkunci':'🔓 Data entry tidak terkunci',globalLocked?'ok':'err');
   updateLockBanner();
   render();
@@ -205,7 +208,6 @@ function toggleGlobalLock(){
 function toggleMembersLock(){
   membersLocked=!membersLocked;
   localStorage.setItem('wp_members_locked',membersLocked?'1':'0');
-  showToast(membersLocked?'🔒 Data member terkunci':'🔓 Data member tidak terkunci',membersLocked?'ok':'err');
   render();
 }
 
@@ -213,6 +215,8 @@ function toggleEntryLock(zone,name){
   const k=zone+'__'+name;
   lockedEntries[k]=!lockedEntries[k];
   localStorage.setItem('wp_locked_entries',JSON.stringify(lockedEntries));
+  // Simpan ke Firebase supaya realtime di semua device
+  if(dbRef) dbRef.child('_lockedEntries').set(lockedEntries);
   showToast(lockedEntries[k]?`🔒 ${name} terkunci`:`🔓 ${name} tidak terkunci`);
   render();
 }

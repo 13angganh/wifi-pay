@@ -3,14 +3,18 @@
 // ══════════════════════════════════════════
 
 // ── RENDER ROUTER ──
+// Simpan scroll position entry secara global supaya tidak hilang saat render dari listener realtime
+window._entryScrollTop=0;
+
 function render(){
   const c=document.getElementById('content');
   if(!c)return;
   Object.values(chartInstances).forEach(ch=>{try{ch.destroy();}catch(e){}});
   chartInstances={};
-  // Simpan scroll position untuk entry agar tidak loncat ke atas saat expand/entry
   const isEntry=currentView==='entry';
-  const savedScroll=isEntry?c.scrollTop:0;
+  // Ambil scroll terbaru dari DOM dulu (lebih akurat dari nilai global)
+  if(isEntry && c.scrollTop>0) window._entryScrollTop=c.scrollTop;
+  const savedScroll=isEntry?window._entryScrollTop:0;
   if(currentView==='dashboard') c.innerHTML=renderDashboard();
   else if(currentView==='entry') c.innerHTML=renderEntry();
   else if(currentView==='rekap') c.innerHTML=renderRekap();
@@ -22,7 +26,7 @@ function render(){
   else c.innerHTML=renderDashboard();
   // Entry: kembalikan scroll ke posisi semula (jangan loncat ke atas)
   if(isEntry) c.scrollTop=savedScroll;
-  else c.scrollTop=0;
+  else { c.scrollTop=0; window._entryScrollTop=0; }
   updateLockBanner();
   document.querySelectorAll('.sb-item').forEach(b=>b.classList.toggle('on',b.dataset.v===currentView));
   document.querySelectorAll('.nb').forEach(b=>b.classList.toggle('on',b.dataset.v===currentView));
@@ -213,7 +217,7 @@ function renderEntry(){
     <select class="cs" onchange="selMonth=+this.value;render()">${moOpts}</select>
     <select class="cs" onchange="selYear=+this.value;render()">${yrOpts}</select>
   </div>
-  <div class="search-wrap"><input class="search-box" id="entry-search" placeholder="🔍 Cari nama..." value="${search}" oninput="doSearch('entry',this.value)"/><button class="search-clear" id="entry-search-clear" onclick="clearSearch('entry')" style="display:${search?'flex':'none'}">✕</button></div>
+  <div class="search-wrap"><input class="search-box" id="entry-search" placeholder="🔍 Cari nama..." value="${search}" oninput="doSearch('entry',this.value)" autocomplete="off" autocorrect="off" autocapitalize="off"/><button class="search-clear" id="entry-search-clear" onclick="clearSearch('entry')" style="display:${search?'flex':'none'}">✕</button></div>
   <div class="frow">
     ${[['all','Semua'],['paid','Lunas'],['unpaid','Belum']].map(([v,l])=>`<button class="fchip${filterStatus===v?' on':''}" onclick="filterStatus='${v}';render()">${l}</button>`).join('')}
   </div>
