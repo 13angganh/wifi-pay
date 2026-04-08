@@ -2,6 +2,125 @@
 // actions.js — Pay, Member, Lock, Free, Operasional
 // ══════════════════════════════════════════
 
+// ── REKAP INLINE CARD ──
+function toggleRekapCard(name,month){
+  const cur=window._rekapExpanded;
+  if(cur&&cur.name===name&&cur.month===month){
+    closeRekapCard(); return;
+  }
+  window._rekapExpanded={name,month};
+  // Render modal floating
+  _renderRekapModal(name,month);
+}
+
+function closeRekapCard(){
+  window._rekapExpanded=null;
+  const m=document.getElementById('rekap-float-modal');
+  if(m) m.remove();
+}
+
+function _renderRekapModal(name,month){
+  // Hapus modal lama jika ada
+  const old=document.getElementById('rekap-float-modal');
+  if(old) old.remove();
+
+  const entryFree=isFree(activeZone,name,selYear,month);
+  const entryVal=getPay(activeZone,name,selYear,month);
+  const locked=globalLocked||(lockedEntries[activeZone+'__'+name]===true);
+  const info2=appData.memberInfo?.[activeZone+'__'+name]||{};
+  const tarif=info2.tarif;
+  const tarifBtn=tarif?`<button class="qb" style="border-color:var(--zc);color:var(--zc);font-weight:700" onclick="rekapQuickPay('${name}',${tarif},${month})">${tarif} ★</button>`:'';
+  const otherBtns=QUICK.filter(a=>a!==tarif).map(a=>`<button class="qb" onclick="rekapQuickPay('${name}',${a},${month})">${a}</button>`).join('');
+
+  let bodyHtml;
+  if(entryFree){
+    bodyHtml=`<div style="padding:12px 0;font-size:12px;color:#4CAF50;text-align:center">🆓 Member Gratis periode ini</div>`;
+  } else if(locked){
+    bodyHtml=`<div style="padding:12px 0;font-size:12px;color:#e05c5c;text-align:center">🔒 Data terkunci</div>`;
+  } else {
+    bodyHtml=`
+      <div style="display:flex;gap:6px;align-items:center;margin-bottom:10px">
+        <span style="font-size:10px;color:var(--txt4);flex-shrink:0;min-width:60px">NOMINAL</span>
+        <input class="mc-input" type="number" inputmode="numeric" placeholder="0"
+          value="${entryVal!==null?entryVal:''}"
+          id="rekap-float-inp"
+          onchange="rekapManualPay('${name}',this.value,${month})"
+          autocomplete="nope" autocorrect="off" autocapitalize="off" spellcheck="false"
+          style="flex:1;min-width:0"/>
+        ${entryVal!==null?`<button class="delbtn" onclick="rekapClearPay('${name}',${month})">✕</button>`:''}
+      </div>
+      <div style="display:flex;flex-wrap:wrap;gap:6px">${tarifBtn}${otherBtns}</div>`;
+  }
+
+  const modal=document.createElement('div');
+  modal.id='rekap-float-modal';
+  modal.style.cssText='position:fixed;inset:0;z-index:8000;display:flex;align-items:flex-start;justify-content:center;padding:12px 16px 0;pointer-events:none';
+  // Hitung posisi: tampil di ~20% dari atas layar agar selalu di atas keyboard
+  const topOffset=Math.round(window.innerHeight*0.18);
+  modal.style.paddingTop=topOffset+'px';
+  modal.innerHTML=`
+    <div style="background:var(--card);border:1px solid var(--zc);border-radius:14px;width:min(320px,100%);box-shadow:0 8px 32px rgba(0,0,0,.45);pointer-events:all;overflow:hidden">
+      <div style="display:flex;align-items:center;justify-content:space-between;padding:12px 14px 10px;border-bottom:1px solid var(--border2)">
+        <div>
+          <div style="font-size:13px;font-weight:700;color:var(--txt)">${name}</div>
+          <div style="font-size:10px;color:var(--zc);margin-top:1px;letter-spacing:.04em">${activeZone} · ${MONTHS[month]} ${selYear}</div>
+        </div>
+        <button onclick="closeRekapCard()" style="background:var(--bg3);border:1px solid var(--border);color:var(--txt3);width:28px;height:28px;border-radius:8px;cursor:pointer;font-size:14px;display:flex;align-items:center;justify-content:center;flex-shrink:0">✕</button>
+      </div>
+      <div style="padding:12px 14px 14px">${bodyHtml}</div>
+    </div>`;
+  document.body.appendChild(modal);
+
+  // Auto focus input
+  setTimeout(()=>{
+    const inp=document.getElementById('rekap-float-inp');
+    if(inp) inp.focus();
+  },80);
+}
+
+function rekapQuickPay(name,amt,month){
+  if(globalLocked||(lockedEntries[activeZone+'__'+name]===true)){showToast('Data terkunci! Unlock dulu','err');return;}
+  if(!appData.payments) appData.payments={};
+  const old=getPay(activeZone,name,selYear,month);
+  appData.payments[getKey(activeZone,name,selYear,month)]=amt;
+  saveDB({action:`💰 Quick Pay Rekap ${activeZone} - ${name}`,detail:`${MONTHS[month]} ${selYear}: ${old??'—'} → Rp ${(amt*1000).toLocaleString('id-ID')}`});
+  showToast(`${name} ${MONTHS[month]} ${selYear} → ${rp(amt)}`);
+  closeRekapCard();
+}
+
+function rekapManualPay(name,val,month){
+  if(globalLocked||(lockedEntries[activeZone+'__'+name]===true)){showToast('Data terkunci! Unlock dulu','err');return;}
+  if(!appData.payments) appData.payments={};
+  const k=getKey(activeZone,name,selYear,month);
+  const old=getPay(activeZone,name,selYear,month);
+  if(val===''||val===null||val===undefined){
+    delete appData.payments[k];
+    saveDB({action:`🗑️ Hapus bayar Rekap ${activeZone} - ${name}`,detail:`${MONTHS[month]} ${selYear}: ${old??'—'} → dihapus`});
+    showToast(`${name} ${MONTHS[month]} ${selYear} dihapus`,'err');
+  } else {
+    const amt=+val;
+    if(isNaN(amt)){showToast('Nominal tidak valid','err');return;}
+    appData.payments[k]=amt;
+    const logLabel=amt===0?'Rp 0 (lunas akumulasi)':'Rp '+(amt*1000).toLocaleString('id-ID');
+    saveDB({action:`💰 Bayar Rekap ${activeZone} - ${name}`,detail:`${MONTHS[month]} ${selYear}: ${old??'—'} → ${logLabel}`});
+    showToast(`${name} ${MONTHS[month]} ${selYear} → ${amt===0?'Akumulasi':rp(amt)}`);
+  }
+  closeRekapCard();
+}
+
+function rekapClearPay(name,month){
+  if(globalLocked||(lockedEntries[activeZone+'__'+name]===true)){showToast('Data terkunci! Unlock dulu','err');return;}
+  const k=getKey(activeZone,name,selYear,month);
+  const old=getPay(activeZone,name,selYear,month);
+  if(old===null) return;
+  showConfirm('🗑️',`Hapus pembayaran <b>${name}</b>?<br><span style="font-size:11px;color:var(--txt3)">${MONTHS[month]} ${selYear} · ${old>0?rp(old):'Akumulasi'}</span>`,'Ya, Hapus',()=>{
+    delete appData.payments[k];
+    saveDB({action:`🗑️ Hapus bayar Rekap ${activeZone} - ${name}`,detail:`${MONTHS[month]} ${selYear}: Rp ${(old||0)*1000} → dihapus`});
+    showToast(`${name} dihapus`,'err');
+    closeRekapCard();
+  });
+}
+
 // ── ZONE & VIEW ──
 function switchZone(z){
   activeZone=z; search=''; filterStatus='all'; expandedCard=null;
@@ -13,6 +132,8 @@ function switchZone(z){
 function setView(v){
   currentView=v; expandedCard=null; search=''; filterStatus='all';
   window._entryScrollTop=0;
+  window._rekapExpanded=null;
+  closeRekapCard();
   if(v!=='entry'){window._entryYear={}; window._entryMonth={};}
   document.querySelectorAll('.nb').forEach(b=>b.classList.toggle('on',b.dataset.v===v));
   document.querySelectorAll('.sb-item').forEach(b=>b.classList.toggle('on',b.dataset.v===v));
@@ -36,49 +157,49 @@ function filteredMembers(){
 function toggleCard(name){
   const wasExpanded=expandedCard===name;
   expandedCard=wasExpanded?null:name;
-  // Simpan scroll sebelum render supaya render() tidak loncat
-  const c=document.getElementById('content');
-  if(c && c.scrollTop>0) window._entryScrollTop=c.scrollTop;
   render();
   if(!wasExpanded && expandedCard){
-    // Buka card: scroll supaya card terlihat dan tidak tertutup keyboard virtual
-    requestAnimationFrame(()=>{
-      const el=document.getElementById('card-'+name.replace(/\s/g,'_'));
-      const cont=document.getElementById('content');
-      if(!el||!cont) return;
-      // Perkiraan tinggi keyboard virtual: 280px di HP, 0 di desktop
-      const kbHeight=window.innerWidth<768?280:0;
-      const availHeight=window.innerHeight-kbHeight;
-      const cardRect=el.getBoundingClientRect();
-      const contRect=cont.getBoundingClientRect();
-      // Jika card sudah terlihat penuh dalam area yang tersedia, tidak perlu scroll
-      if(cardRect.top>=contRect.top && cardRect.bottom<=(contRect.top+availHeight-60)){
-        // Card sudah terlihat, hanya focus input
-        const inp=document.getElementById('inp-'+name.replace(/\s/g,'_'));
-        if(inp) inp.focus({preventScroll:true});
-        return;
-      }
-      // Scroll card ke posisi 80px dari atas konten
-      const targetScroll=cont.scrollTop+(cardRect.top-contRect.top)-80;
-      cont.scrollTop=Math.max(0,targetScroll);
-      window._entryScrollTop=cont.scrollTop;
-      // Focus input setelah scroll settle
+    // Focus input dulu, lalu tunggu keyboard muncul, baru scroll
+    const inp=document.getElementById('inp-'+name.replace(/\s/g,'_'));
+    if(inp){
+      inp.focus();
+      // Fungsi scroll ulang setelah keyboard muncul
+      const scrollToCard=()=>{
+        const el=document.getElementById('card-'+name.replace(/\s/g,'_'));
+        if(!el) return;
+        const c=document.getElementById('content');
+        if(!c) return;
+        // Gunakan visualViewport jika tersedia (memperhitungkan keyboard)
+        const vvHeight=window.visualViewport?window.visualViewport.height:window.innerHeight;
+        const cardRect=el.getBoundingClientRect();
+        const contentRect=c.getBoundingClientRect();
+        // Hitung posisi card relatif terhadap content container
+        const cardRelTop=cardRect.top-contentRect.top+c.scrollTop;
+        // Target: card tampil di 1/3 atas area yang tersisa (di atas keyboard)
+        const targetScroll=cardRelTop-Math.max(60, (vvHeight*0.25));
+        c.scrollTop=Math.max(0,targetScroll);
+      };
+      // Coba 2 kali: setelah render (~80ms) dan setelah keyboard muncul (~450ms)
+      setTimeout(scrollToCard, 80);
+      setTimeout(scrollToCard, 450);
+    } else {
+      // Tidak ada input (free member), scroll biasa
       setTimeout(()=>{
-        const inp=document.getElementById('inp-'+name.replace(/\s/g,'_'));
-        if(inp) inp.focus({preventScroll:true});
-      },60);
-    });
+        const el=document.getElementById('card-'+name.replace(/\s/g,'_'));
+        if(el){
+          const c=document.getElementById('content');
+          if(c) c.scrollTop=Math.max(0, el.offsetTop-80);
+        }
+      }, 80);
+    }
   }
-  // Saat tutup (wasExpanded=true): tidak ada scroll sama sekali — tetap di posisi sekarang
 }
 
 function setEntryMonth(name,val,type){
   if(type==='year') window._entryYear[name]=+val;
   else window._entryMonth[name]=+val;
   expandedCard=name;
-  // Simpan scroll sebelum render
-  const c=document.getElementById('content');
-  if(c && c.scrollTop>0) window._entryScrollTop=c.scrollTop;
+  // render() sudah jaga scroll di entry view
   render();
 }
 
@@ -103,7 +224,7 @@ function saveEntryPay(name,val){
     showToast(`${name} ${MONTHS[em]} ${ey} → ${label}`);
   }
   expandedCard=name;
-  // render() dipanggil lokal sekali (optimistic UI), Firebase listener akan skip karena _isSaving
+  // Render tanpa scroll loncat — posisi scroll dipertahankan di render()
   render();
 }
 
@@ -132,7 +253,7 @@ function quickEntryPay(name,amt){
   saveDB({action:`💰 Quick Pay ${activeZone} - ${name}`,detail:`${MONTHS[em]} ${ey}: ${old??'—'} → Rp ${(amt*1000).toLocaleString('id-ID')}`});
   showToast(`${name} ${MONTHS[em]} ${ey} → ${rp(amt)}`);
   expandedCard=name;
-  // Optimistic UI — Firebase listener skip karena _isSaving
+  // Render — posisi scroll dipertahankan di render()
   render();
 }
 
@@ -169,9 +290,7 @@ function saveInfoField(el){
   appData.memberInfo[k][field]=val;
   saveDB({action:`📅 Update ${activeZone} - ${name}`,detail:`${field}: ${val}`});
   expandedCard=name;
-  // Simpan scroll sebelum render
-  const c=document.getElementById('content');
-  if(c && c.scrollTop>0) window._entryScrollTop=c.scrollTop;
+  // render() jaga scroll di entry view
   render();
   showToast(`Tanggal bayar disimpan`);
 }
@@ -219,13 +338,11 @@ function gotoMember(zone,name){
 function toggleGlobalLock(){
   globalLocked=!globalLocked;
   localStorage.setItem('wp_global_locked',globalLocked?'1':'0');
+  // Simpan ke Firebase supaya realtime di semua device
+  if(dbRef) dbRef.child('_globalLocked').set(globalLocked);
   showToast(globalLocked?'🔒 Semua data entry terkunci':'🔓 Data entry tidak terkunci',globalLocked?'ok':'err');
   updateLockBanner();
   render();
-  // Simpan ke Firebase — update subcollection DAN appData utama
-  if(dbRef){
-    dbRef.child('_globalLocked').set(globalLocked);
-  }
 }
 
 function toggleMembersLock(){
@@ -238,12 +355,10 @@ function toggleEntryLock(zone,name){
   const k=zone+'__'+name;
   lockedEntries[k]=!lockedEntries[k];
   localStorage.setItem('wp_locked_entries',JSON.stringify(lockedEntries));
+  // Simpan ke Firebase supaya realtime di semua device
+  if(dbRef) dbRef.child('_lockedEntries').set(lockedEntries);
   showToast(lockedEntries[k]?`🔒 ${name} terkunci`:`🔓 ${name} tidak terkunci`);
   render();
-  // Simpan ke Firebase — update subcollection DAN appData utama
-  if(dbRef){
-    dbRef.child('_lockedEntries').set(lockedEntries);
-  }
 }
 
 // ── MEMBER CRUD ──

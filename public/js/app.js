@@ -13,11 +13,19 @@ window.addEventListener('beforeinstallprompt',e=>{
 if('serviceWorker' in navigator){
   navigator.serviceWorker.register('./sw.js').then(reg=>{
     reg.update();
-    if(reg.waiting) showUpdateBanner();
+    // Jika ada SW baru menunggu → langsung tampilkan banner update
+    if(reg.waiting) {
+      reg.waiting.postMessage({type:'SKIP_WAITING'});
+      showUpdateBanner();
+    }
     reg.addEventListener('updatefound',()=>{
       const newSW=reg.installing;
       newSW.addEventListener('statechange',()=>{
-        if(newSW.state==='installed'&&navigator.serviceWorker.controller){ showUpdateBanner(); }
+        if(newSW.state==='installed'){
+          // SW baru terinstall → langsung skip waiting & tampil banner
+          newSW.postMessage({type:'SKIP_WAITING'});
+          showUpdateBanner();
+        }
       });
     });
   });

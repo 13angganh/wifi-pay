@@ -2,65 +2,58 @@
 // data.js — Firebase DB, Sync, Helpers, Backup, Import/Export
 // ══════════════════════════════════════════
 
+// ── ONLINE CHECK ──
+function checkOnline(){
+  if(!navigator.onLine){
+    showToast('⚠️ Tidak ada koneksi internet. Aplikasi ini memerlukan koneksi online.','err');
+    return false;
+  }
+  return true;
+}
+
+window.addEventListener('online',  ()=>{ showToast('✅ Koneksi kembali!','ok'); });
+window.addEventListener('offline', ()=>{ showToast('⚠️ Koneksi terputus — aplikasi tidak bisa digunakan offline.','err'); setSyncOffline(); });
+
 // ── DB INIT ──
 function initDB(){
+  if(!checkOnline()) return;
   setSyncStatus('loading');
   dbRef=db.ref('users/'+uid+'/data');
 
-  // ── Listener realtime untuk lock global — terpisah, selalu aktif ──
+  // ── Listener realtime untuk lock status (terpisah dari data utama) ──
   dbRef.child('_globalLocked').on('value',snap=>{
     const val=snap.val();
     if(val!==null && typeof val==='boolean'){
       globalLocked=val;
       localStorage.setItem('wp_global_locked',val?'1':'0');
       updateLockBanner();
-      // Render ringan: hanya update banner + icon lock di cards entry
-      // tanpa full re-render supaya tidak ganggu scroll posisi
-      if(currentView==='entry') render();
+      render();
     }
   });
-
-  // ── Listener realtime untuk lockedEntries — terpisah, selalu aktif ──
   dbRef.child('_lockedEntries').on('value',snap=>{
     const val=snap.val();
     if(val!==null && typeof val==='object'){
       lockedEntries=val||{};
       localStorage.setItem('wp_locked_entries',JSON.stringify(lockedEntries));
-      if(currentView==='entry') render();
+      render();
     }
   });
 
-  // ── Listener utama data ──
+  // ── Listener utama — SELALU terima update, tidak ada flag blokir ──
   dbRef.on('value',snap=>{
     const val=snap.val();
-    // Jika sedang menyimpan dari device INI (dalam window 1.5 detik), skip
-    // supaya tidak overwrite optimistic UI lokal. Update dari device LAIN
-    // akan ditangkap setelah flag ini habis.
-    const now=Date.now();
-    if(_isSaving && (now-_lastSaveTs)<1500) return;
-    // Reset flag jika sudah lewat 1.5 detik (fallback safety)
-    if(_isSaving) _isSaving=false;
-
     if(val&&(val.krsMembers||val.payments)){
+      const mergedFree=val.freeMembers||{};
       appData={
         krsMembers: val.krsMembers||[],
         slkMembers: val.slkMembers||[],
         payments: val.payments||{},
         memberInfo: val.memberInfo||{},
         activityLog: val.activityLog||[],
-        freeMembers: val.freeMembers||{},
+        freeMembers: mergedFree,
         deletedMembers: val.deletedMembers||{},
         operasional: val.operasional||{}
       };
-      // Sync lock status dari Firebase jika ada (support multi-device)
-      if(typeof val._globalLocked==='boolean'){
-        globalLocked=val._globalLocked;
-        localStorage.setItem('wp_global_locked',val._globalLocked?'1':'0');
-      }
-      if(val._lockedEntries&&typeof val._lockedEntries==='object'){
-        lockedEntries=val._lockedEntries;
-        localStorage.setItem('wp_locked_entries',JSON.stringify(lockedEntries));
-      }
       cleanOldEditLogs();
     } else if(!val){
       appData={
@@ -78,28 +71,16 @@ function initDB(){
 
 function saveDB(logEntry){
   if(!dbRef) return;
+  if(!checkOnline()) return;
   setSyncStatus('loading');
   if(logEntry){
     if(!appData.activityLog) appData.activityLog=[];
     appData.activityLog.unshift({...logEntry,ts:Date.now(),user:currentUser?.email||'—'});
     if(appData.activityLog.length>200) appData.activityLog=appData.activityLog.slice(0,200);
   }
-  _isSaving=true;
-  _lastSaveTs=Date.now();
-  // Safety: paksa reset flag setelah 2 detik agar device lain tidak terblokir lama
-  clearTimeout(window._savingTimeout);
-  window._savingTimeout=setTimeout(()=>{ _isSaving=false; },2000);
   dbRef.set(appData)
-    .then(()=>{
-      setSyncStatus('ok');
-      _isSaving=false;
-      clearTimeout(window._savingTimeout);
-    })
-    .catch(()=>{
-      setSyncStatus('err');
-      _isSaving=false;
-      clearTimeout(window._savingTimeout);
-    });
+    .then(()=>{ setSyncStatus('ok'); })
+    .catch(()=>{ setSyncStatus('err'); });
 }
 
 function setSyncStatus(s){

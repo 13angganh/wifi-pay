@@ -13,8 +13,6 @@ let appData = {
   deletedMembers: {},
   operasional: {}
 };
-let _isSaving = false;
-let _lastSaveTs = 0;
 let globalLocked = localStorage.getItem('wp_global_locked') === '1';
 let lockedEntries = JSON.parse(localStorage.getItem('wp_locked_entries') || '{}');
 let activeZone = "KRS", currentView = "dashboard";

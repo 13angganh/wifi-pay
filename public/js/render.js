@@ -5,8 +5,6 @@
 // ── RENDER ROUTER ──
 // Simpan scroll position entry secara global supaya tidak hilang saat render dari listener realtime
 window._entryScrollTop=0;
-// Flag: sedang ada user interaction (buka/tutup card) — tunda Firebase listener render
-window._userInteracting=false;
 
 function render(){
   const c=document.getElementById('content');
@@ -14,14 +12,9 @@ function render(){
   Object.values(chartInstances).forEach(ch=>{try{ch.destroy();}catch(e){}});
   chartInstances={};
   const isEntry=currentView==='entry';
-  // Simpan scroll aktual dari DOM (lebih akurat)
-  if(isEntry){
-    const domScroll=c.scrollTop;
-    // Ambil nilai terbesar (hindari reset ke 0 dari re-render saat scroll sedang di bawah)
-    if(domScroll>0) window._entryScrollTop=domScroll;
-  }
+  // Ambil scroll terbaru dari DOM dulu (lebih akurat dari nilai global)
+  if(isEntry && c.scrollTop>0) window._entryScrollTop=c.scrollTop;
   const savedScroll=isEntry?window._entryScrollTop:0;
-
   if(currentView==='dashboard') c.innerHTML=renderDashboard();
   else if(currentView==='entry') c.innerHTML=renderEntry();
   else if(currentView==='rekap') c.innerHTML=renderRekap();
@@ -31,20 +24,9 @@ function render(){
   else if(currentView==='operasional') c.innerHTML=renderOperasional();
   else if(currentView==='members') c.innerHTML=renderMembers();
   else c.innerHTML=renderDashboard();
-
-  // Entry: kembalikan scroll ke posisi semula — gunakan requestAnimationFrame
-  // supaya scroll di-set SETELAH DOM benar-benar selesai dipaint
-  if(isEntry){
-    if(savedScroll>0){
-      requestAnimationFrame(()=>{
-        c.scrollTop=savedScroll;
-      });
-    }
-  } else {
-    c.scrollTop=0;
-    window._entryScrollTop=0;
-  }
-
+  // Entry: kembalikan scroll ke posisi semula (jangan loncat ke atas)
+  if(isEntry) c.scrollTop=savedScroll;
+  else { c.scrollTop=0; window._entryScrollTop=0; }
   updateLockBanner();
   document.querySelectorAll('.sb-item').forEach(b=>b.classList.toggle('on',b.dataset.v===currentView));
   document.querySelectorAll('.nb').forEach(b=>b.classList.toggle('on',b.dataset.v===currentView));
@@ -115,7 +97,7 @@ function renderDashboard(){
   <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px">
     <div style="background:var(--card);border:1px solid var(--border);border-radius:12px;padding:12px">
       <div style="font-size:9px;color:var(--txt4);margin-bottom:2px">KRS ${pctBadge(krsPct2)}</div>
-      <div style="font-family:'Syne',sans-serif;font-size:16px;font-weight:800;color:#2196F3">${rp(krsTotal)}</div>
+      <div style="font-family:'Syne',sans-serif;font-size:clamp(11px,3.5vw,14px);font-weight:800;color:#2196F3;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${rp(krsTotal)}</div>
       <div style="margin-top:6px">
         <div style="height:4px;background:var(--bg3);border-radius:2px;overflow:hidden"><div style="height:100%;width:${krsPct}%;background:#2196F3;border-radius:2px;transition:width .4s"></div></div>
         <div style="font-size:9px;color:var(--txt4);margin-top:3px">${krsLunas}/${krsAll.length} lunas (${krsPct}%)</div>
@@ -123,7 +105,7 @@ function renderDashboard(){
     </div>
     <div style="background:var(--card);border:1px solid var(--border);border-radius:12px;padding:12px">
       <div style="font-size:9px;color:var(--txt4);margin-bottom:2px">SLK ${pctBadge(slkPct2)}</div>
-      <div style="font-family:'Syne',sans-serif;font-size:16px;font-weight:800;color:#e05c3a">${rp(slkTotal)}</div>
+      <div style="font-family:'Syne',sans-serif;font-size:clamp(11px,3.5vw,14px);font-weight:800;color:#e05c3a;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${rp(slkTotal)}</div>
       <div style="margin-top:6px">
         <div style="height:4px;background:var(--bg3);border-radius:2px;overflow:hidden"><div style="height:100%;width:${slkPct}%;background:#e05c3a;border-radius:2px;transition:width .4s"></div></div>
         <div style="font-size:9px;color:var(--txt4);margin-top:3px">${slkLunas}/${slkAll.length} lunas (${slkPct}%)</div>
@@ -131,9 +113,9 @@ function renderDashboard(){
     </div>
   </div>
   <div style="background:var(--card);border:1px solid var(--border);border-radius:12px;padding:12px;margin-bottom:8px">
-    <div style="display:flex;justify-content:space-between;margin-bottom:8px">
-      <div><div style="font-size:9px;color:var(--txt4);margin-bottom:2px">PENDAPATAN KOTOR</div><div style="font-family:'Syne',sans-serif;font-size:18px;font-weight:800;color:#4CAF50">${rp(totalIncome)}</div></div>
-      <div style="text-align:right"><div style="font-size:9px;color:var(--txt4);margin-bottom:2px">BERSIH (setelah ops)</div><div style="font-family:'Syne',sans-serif;font-size:18px;font-weight:800;color:${netIncome>=0?'#4CAF50':'#e05c5c'}">${rp(netIncome)}</div></div>
+    <div style="display:flex;justify-content:space-between;margin-bottom:8px;gap:8px">
+      <div style="min-width:0;flex:1"><div style="font-size:9px;color:var(--txt4);margin-bottom:2px">PENDAPATAN KOTOR</div><div style="font-family:'Syne',sans-serif;font-size:clamp(11px,3.8vw,16px);font-weight:800;color:#4CAF50;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${rp(totalIncome)}</div></div>
+      <div style="text-align:right;min-width:0;flex:1"><div style="font-size:9px;color:var(--txt4);margin-bottom:2px">BERSIH (setelah ops)</div><div style="font-family:'Syne',sans-serif;font-size:clamp(11px,3.8vw,16px);font-weight:800;color:${netIncome>=0?'#4CAF50':'#e05c5c'};white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${rp(netIncome)}</div></div>
     </div>
     ${totalOps>0?`<div style="font-size:10px;color:#e05c5c">💸 Operasional: ${rp(totalOps)}</div>`:'<div style="font-size:10px;color:var(--txt4)">💸 Belum ada data operasional</div>'}
   </div>
@@ -207,12 +189,12 @@ function renderEntry(){
       ${entryFree?`<div style="background:#0a2a18;border:1px solid #4CAF5033;border-radius:7px;padding:8px;font-size:11px;color:#4CAF50;text-align:center">🆓 Member Gratis periode ini</div>`:`
       <div class="mc-row">
         <span class="mc-label">JUMLAH</span>
-        <input class="mc-input" type="number" inputmode="numeric" pattern="[0-9]*" placeholder="0" value="${entryVal!==null?entryVal:''}" data-name="${name}" id="inp-${name.replace(/\s/g,'_')}" onchange="saveEntryPay('${name}',this.value)" autocomplete="new-password" autocorrect="off" autocapitalize="off" spellcheck="false" data-lpignore="true" data-form-type="other"/>
+        <input class="mc-input" type="number" inputmode="numeric" placeholder="0" value="${entryVal!==null?entryVal:''}" data-name="${name}" id="inp-${name.replace(/\s/g,'_')}" onchange="saveEntryPay('${name}',this.value)" autocomplete="nope" autocorrect="off" autocapitalize="off" spellcheck="false"/>
         ${entryVal!==null?`<button class="delbtn" onclick="clearEntryPay('${name}')">✕</button>`:''}
       </div>
       <div class="mc-row">
         <span class="mc-label">TGL BAYAR</span>
-        <input class="mc-date" type="date" value="${info['date_'+entryYear+'_'+entryMonth]||''}" data-field="date_${entryYear}_${entryMonth}" data-name="${name}" onchange="saveInfoField(this)" autocomplete="off" data-lpignore="true"/>
+        <input class="mc-date" type="date" value="${info['date_'+entryYear+'_'+entryMonth]||''}" data-field="date_${entryYear}_${entryMonth}" data-name="${name}" onchange="saveInfoField(this)" autocomplete="nope"/>
       </div>
       <div class="mc-row"><span class="mc-label">QUICK</span>
         <div class="qrow">${(()=>{const info2=getInfo(name);const tarif=info2.tarif;const tarifBtn=tarif?`<button class="qb" style="border-color:var(--zc);color:var(--zc);font-weight:700" onclick="quickEntryPay('${name}',${tarif})">${tarif} ★</button>`:'<span style="font-size:9px;color:var(--txt4);align-self:center">★ Belum ada tarif</span>';const others=QUICK.filter(a=>a!==tarif).map(a=>`<button class="qb" onclick="quickEntryPay('${name}',${a})">${a}</button>`).join('');return tarifBtn+others;})()}</div>
@@ -252,6 +234,7 @@ function renderRekap(){
   const mems=members().filter(m=>m.toLowerCase().includes(search.toLowerCase()));
   const yrOpts=YEARS.map(y=>`<option value="${y}"${y===selYear?' selected':''}>${y}</option>`).join('');
   const grand=MONTHS.reduce((s,_,mi)=>s+members().reduce((ss,m)=>ss+(getPay(activeZone,m,selYear,mi)||0),0),0);
+  const expRekap=window._rekapExpanded||null;
   const rows=mems.map((name,i)=>{
     let rt=0;
     const cells=MONTHS.map((_,mi)=>{
@@ -261,7 +244,8 @@ function renderRekap(){
       rt+=v||0;
       const cls=v>0?'cv':v===0&&!free?'cz':'cn';
       const disp=free?`<span style="font-size:8px;opacity:.7">🆓</span>`:v===0?`<span style="font-size:8px;opacity:.8">Akm</span>`:v!==null?(v*1000).toLocaleString('id-ID'):'—';
-      return `<td class="${cls}" onclick="goEntry('${name}',${mi},${selYear})" title="${free?'Free Member':''}">${disp}</td>`;
+      const isExp=expRekap&&expRekap.name===name&&expRekap.month===mi;
+      return `<td class="${cls}${isExp?' rekap-exp-cell':''}" onclick="toggleRekapCard('${name}',${mi})" title="${free?'Free Member':MONTHS[mi]+' '+selYear}">${disp}</td>`;
     }).join('');
     return `<tr data-name="${name}"><td class="stk" style="left:0;font-size:10px;color:var(--txt5);padding-left:8px;min-width:22px">${i+1}</td>
     <td class="stk" style="left:22px;min-width:95px;font-size:12px;text-align:left;padding-left:6px">${name}</td>
@@ -269,7 +253,7 @@ function renderRekap(){
   }).join('');
   const ftCells=MONTHS.map((_,mi)=>{const t=members().reduce((s,m)=>s+(getPay(activeZone,m,selYear,mi)||0),0);return `<td style="color:#4CAF50;font-weight:700">${(t*1000).toLocaleString('id-ID')}</td>`;}).join('');
   return `<div style="display:flex;gap:7px;margin-bottom:10px;align-items:center">
-    <select class="cs" style="flex:none;width:auto" onchange="selYear=+this.value;render()">${yrOpts}</select>
+    <select class="cs" style="flex:none;width:auto" onchange="selYear=+this.value;closeRekapCard();render()">${yrOpts}</select>
     <div class="search-wrap" style="flex:1;margin:0"><input class="search-box" id="rekap-search" style="margin:0" placeholder="🔍 cari..." value="${search}" oninput="doSearch('rekap',this.value)"/><button class="search-clear" id="rekap-search-clear" onclick="clearSearch('rekap')" style="display:${search?'flex':'none'}">✕</button></div>
   </div>
   <div class="sum-bar" style="margin-bottom:10px"><div class="sum-lbl">${activeZone} ${selYear}</div><div class="sum-val">${rp(grand)}</div></div>
